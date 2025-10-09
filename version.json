@@ -1,7 +1,7 @@
 {
   "latestVersionCode": 10,    // 最新版本号
   "latestVersionName": "1.6.6", // 版本名称
-  "updateDesc": "1. 新增XX功能\n2. 修复XX问题", // 更新说明
+  "updateDesc": "1. 新增荧光笔透明度更新功能\n2. 修复无法进行版本更新的问题", // 更新说明
   "downloadUrl": "https://d.feiliupan.com/t/135549306957467648/fenbi.apk", // APK下载地址
   "forceUpdate": false,         // 是否强制更
   "minSupportVersion": 1      // 最低支持版本
