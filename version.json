@@ -1,7 +1,7 @@
 {
   "latestVersionCode": 6,    // 最新版本号
-  "latestVersionName": "1.6.6", // 版本名称
-  "updateDesc": "1. 新增荧光笔透明度更新功能\n2. 修复无法进行版本更新的问题", // 更新说明
+  "latestVersionName": "1.2.2", // 版本名称
+  "updateDesc": "1. 新增屏幕截图的功能\n2. 修改橡皮擦的底层逻辑，当使用橡皮擦工具时，只要触碰到任何标注路径的任何部分，整条路径都会被删除！", // 更新说明
   "downloadUrl": "https://d.feiliupan.com/t/135549306957467648/fenbi.apk", // APK下载地址
   "forceUpdate": false,         // 是否强制更
   "minSupportVersion": 1      // 最低支持版本
