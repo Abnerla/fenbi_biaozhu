@@ -1,8 +1,9 @@
 作者经常使用平板进行学习，但一直无法找到心仪且免费的屏幕标注软件，于是就开发了这一款支持跨应用全局屏幕标注的安卓APP,用户在任意应用界面均可触发标注,且标注过程不影响底层应用运行。
 
-# 粉笔标注 - Android 全局屏幕标注工具
 
 <div align="center">
+  
+# 粉笔标注 - Android 全局屏幕标注工具
 
 ![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Android%209.0%2B-green.svg)
