@@ -1,6 +1,6 @@
 {
-  "latestVersionCode": 7,    // 最新版本号
-  "latestVersionName": "1.2.2", // 版本名称
+  "latestVersionCode": 8,    // 最新版本号
+  "latestVersionName": "1.2.3", // 版本名称
   "updateDesc": "1. 新增屏幕截图的功能\n2. 修改橡皮擦的底层逻辑，当使用橡皮擦工具时，只要触碰到任何标注路径的任何部分，整条路径都会被删除！", // 更新说明
   "downloadUrl": "https://d.feiliupan.com/t/135549306957467648/fenbi.apk", // APK下载地址
   "forceUpdate": false,         // 是否强制更
