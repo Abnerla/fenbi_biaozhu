@@ -1,328 +1,546 @@
-#如果你有什么建议可以在github上向我提出来！！！感谢支持！！！
-
-#作者经常使用平板进行学习，但一直无法找到心仪且免费的屏幕标注软件，于是就开发了这一款支持跨应用全局屏幕标注的安卓APP,用户在任意应用界面均可触发标注,且标注过程不影响底层应用运行。
-
+# 粉笔标注 (Chalk Annotation)
 
 <div align="center">
-  
-# 粉笔标注 - Android 全局屏幕标注工具
 
 ![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-![Platform](https://img.shields.io/badge/platform-Android%209.0%2B-green.svg)
-![Language](https://img.shields.io/badge/language-Kotlin-purple.svg)
-![Framework](https://img.shields.io/badge/framework-Jetpack%20Compose-orange.svg)
-![License](https://img.shields.io/badge/license-MIT-red.svg)
+![Android](https://img.shields.io/badge/platform-Android%2028%2B-green.svg)
+![Kotlin](https://img.shields.io/badge/language-Kotlin-purple.svg)
+![License](https://img.shields.io/badge/license-MIT-orange.svg)
 
-**一款功能强大、操作流畅的Android全局屏幕标注应用**
+一款功能强大的Android屏幕标注工具，支持实时绘图、智能截图等功能
 
-让标注变得简单、直观、专业
-
-[📥 立即下载](#-下载安装) • [📖 使用指南](#-使用指南) • [✨ 核心特性](#-核心特性) • [🎯 应用场景](#-应用场景)
+[特性](#-特性) • [安装](#-安装) • [使用](#-使用) • [技术栈](#️-技术栈) • [贡献](#-贡献)
 
 </div>
 
 ---
 
-## 🌟 项目简介
+## 📖 简介
 
-**粉笔标注**是一款专为Android平台开发的全局屏幕标注应用，它允许用户在任何应用界面上进行实时绘图和标注操作。无论是在线教学、远程会议、应用演示还是问题反馈，粉笔标注都能帮助你快速捕捉并标注屏幕内容，让沟通更加直观高效。
+**粉笔标注**是一款专为Android设计的全局屏幕标注应用，允许用户在任何应用界面上进行实时绘图和标注。无论是在线教学、远程协作还是问题反馈，都能轻松捕捉并标注屏幕内容。
 
-### 💡 为什么选择粉笔标注？
+### 💡 应用场景
 
-- **🎯 全局可用** - 在任何应用界面上都能快速开启标注功能
-- **🎨 专业绘图** - 多种工具、平滑曲线、压感支持
-- **📸 智能截图** - 一键保存标注内容，自动隐藏UI确保截图纯净
-- **⚡ 极致流畅** - 响应延迟<100ms，书写流畅不卡顿
-- **🔒 隐私安全** - 完全离线运行，不上传任何数据
-- **🆓 完全免费** - 无广告、无内购、透明
-
----
-
-## 🎯 应用场景
-
-### 📚 在线教育
-教师在进行远程授课时，可以直接在课件、PDF文档、教学视频等任何内容上进行实时标注讲解，突出重点、圈画关键信息，让学生更容易理解课程内容。无需切换应用，标注即时生效，教学更加连贯流畅。
-
-### 💼 商务协作
-在远程会议或团队协作中，产品经理可以在应用原型、设计稿、文档等内容上直接标注需求和修改意见，技术人员可以快速标注代码问题，设计师可以标注设计要点，让跨团队沟通更加清晰直观。
-
-### 🐛 技术反馈
-开发人员、测试人员或普通用户在发现应用问题时，可以直接在问题界面上标注具体位置、圈出错误内容、添加说明箭头，然后一键截图保存，让问题反馈更加精确，大大提高问题定位和修复效率。
-
-### 🎮 直播娱乐
-游戏主播在直播过程中，可以使用粉笔标注在游戏画面上绘制战术路线、标记重要位置、圈出关键物品，让观众更容易理解游戏策略。教学主播也可以在演示过程中实时标注操作步骤。
-
-### 📱 产品演示
-产品经理在演示新功能、介绍应用操作流程时，可以直接在应用界面上标注功能入口、操作步骤、重点内容，让演示更加生动、清晰，听众更容易理解产品逻辑。
-
-### 🎓 知识分享
-内容创作者在制作教程视频、录制屏幕操作时，可以实时标注重要步骤、提示注意事项、突出关键信息，让教学内容更加专业、易懂，提升用户学习体验。
+- 📚 **在线教学**：教师可以在课件或应用上实时标注讲解
+- 💼 **远程协作**：团队成员标注屏幕内容进行讨论
+- 🐛 **问题反馈**：快速标注问题区域并截图保存
+- 🎮 **游戏直播**：游戏主播标注游戏画面进行讲解
+- 📱 **应用演示**：产品经理展示应用功能时进行标注
 
 ---
 
-## ✨ 核心特性
+## ✨ 特性
 
-### 🎨 专业的标注工具
+### 🎨 多样化绘图工具
+- **画笔工具** - 支持8种预设颜色和自定义笔触粗细（1-20px），适合精确标注
+- **荧光笔工具** - 半透明效果，可调节透明度（10%-80%），适合重点标记
+- **智能橡皮擦** - 按路径擦除，触碰任意部分即可删除整条路径，操作更直观
 
-#### 画笔工具
-画笔是最常用的标注工具，适合绘制精确的线条、箭头、框选区域等。支持8种预设颜色（黑、白、红、橙、金、绿、蓝、紫），可调节笔触粗细，完全不透明，确保标注清晰可见。画笔还支持触控笔压感，轻触细线，重按粗线，还原真实书写手感。
+### 🖼️ 智能截图系统
+- **高质量捕获** - 基于MediaProjection API的高质量屏幕截图
+- **标注合成** - 自动将标注内容与屏幕内容合成为一张图片
+- **智能隐藏UI** - 截图时自动隐藏工具栏和弹窗，确保截图纯净无遮挡
+- **一键保存** - 截图自动保存到系统相册，方便分享和查看
 
-#### 荧光笔工具
-荧光笔专为重点标记设计，使用半透明效果，可以在不遮挡原有内容的情况下突出重点。支持6种亮色系（黄、粉、浅绿、天蓝、梅红、桃色），笔触可调，透明度可在设置中精确调节，适应不同的标注需求。
+### 🎯 悬浮窗体验
+- **全局悬浮按钮** - 在任何应用中快速开启标注功能
+- **自动吸附边缘** - 悬浮按钮和工具栏智能吸附到屏幕边缘
+- **可拖拽工具栏** - 工具栏位置可自由调整并记忆
+- **双布局切换** - 支持竖排和横排两种工具栏布局，适应不同使用场景
 
-#### 智能橡皮擦
-这是粉笔标注的一大创新功能。传统橡皮擦需要精确擦除每个部分，而智能橡皮擦采用"按路径擦除"机制：只要触碰到任何路径的任意部分，整条路径就会立即消失。橡皮擦大小可调，并显示半透明圆圈和十字准星，操作更加精确直观。
+### ⚙️ 丰富的自定义选项
+- **颜色自定义** - 画笔和荧光笔各有6-8种预设颜色可选
+- **笔触调节** - 画笔粗细（1-20px）、荧光笔粗细（10-50px）、橡皮擦大小（20-100px）
+- **透明度控制** - 荧光笔透明度可在设置中精确调整
+- **自动折叠** - 可选择绘图时是否自动折叠二级菜单
 
-### 📸 强大的截图系统
-
-#### 高质量捕获
-基于Android官方MediaProjection API实现屏幕捕获，确保截图质量与原始屏幕完全一致，不会出现模糊、失真等问题。支持各种分辨率和屏幕比例，都能完美捕获。
-
-#### 标注合成
-捕获的屏幕图像会与所有标注路径自动合成为一张图片。合成过程采用专业的图像处理算法，确保标注与屏幕内容完美融合，颜色准确、边缘平滑、没有瑕疵。
-
-#### 相册保存
-截图自动保存到系统相册的Pictures/Screenshots目录，文件名包含时间戳，方便管理和查找。保存后会显示成功提示，用户可以立即分享或进一步编辑。
-
-### 🎯 灵活的悬浮窗体验
-
-#### 全局悬浮按钮
-启动服务后，屏幕上会出现一个蓝色圆形悬浮按钮，这是标注功能的唯一入口。按钮可以在任何应用界面上显示，不受应用限制。按钮采用半透明设计，不会过度遮挡屏幕内容。
-
-#### 智能吸附边缘
-悬浮按钮和工具栏都具有智能吸附功能。拖动到屏幕中央松手后，它们会自动飞向最近的边缘（左边或右边），既保证随时可用，又不会长期占据屏幕中心区域影响操作。吸附过程采用平滑动画，视觉体验舒适。
-
-#### 可拖拽工具栏
-工具栏可以自由拖动到屏幕任意位置，适应不同的使用习惯和场景。比如右手操作时可以放在右侧，左手操作时可以放在左侧。工具栏位置会自动保存，下次使用时仍在相同位置。
-
-#### 双布局切换
-工具栏支持两种布局模式：竖排布局（工具纵向排列，吸附到左右边缘）和横排布局（工具横向排列，吸附到上下边缘）。根据屏幕方向和使用习惯，可以一键切换布局，布局偏好会自动记忆。
-
-
-### 🎮 便捷的操作方式
-
-#### 压感支持
-粉笔标注完整支持触控笔压感。笔触粗细会根据按压力度自动调整（最小为设定值的30%，最大为100%），轻触时画出细线，重按时画出粗线。荧光笔还会根据压力调整透明度，轻触时更透明，重按时更不透明，完美还原真实书写手感。
-
-#### 双指双击撤销
-除了工具栏上的撤销按钮，粉笔标注还支持一个快捷手势：用两根手指同时快速点击屏幕两次（类似双击），即可撤销上一步操作。这个手势在大屏设备或单手操作时特别方便，不需要移动到工具栏位置。
-
-#### 贝塞尔平滑
-所有绘制的路径都会经过贝塞尔曲线平滑处理。这项技术可以消除因为触控采样率限制导致的折线和抖动，让你的标注看起来更加流畅自然，即使快速绘制也能得到平滑的曲线。
-
-#### 状态持久化
-应用会自动记忆你的所有设置和偏好：当前选择的工具、画笔颜色、笔触粗细、工具栏位置、布局方向、透明度设置等。下次打开应用时，所有设置都会自动恢复，无需重新配置。
+### 🎮 便捷操作
+- **压感支持** - 支持触控笔压感，笔触粗细随压力变化（30%-100%）
+- **双指双击撤销** - 快速撤销上一步操作
+- **贝塞尔平滑** - 使用二次贝塞尔曲线平滑路径，书写更流畅
+- **状态持久化** - 工具配置、工具栏位置自动保存
+- **前台服务** - 保证标注功能稳定运行
 
 ---
 
-## 🔧 技术实现
-
-### 现代化开发框架
-粉笔标注完全使用Kotlin语言开发，Kotlin是Google官方推荐的Android开发语言，具有简洁、安全、高效的特点。UI层使用Jetpack Compose框架构建，这是Android的下一代UI框架，采用声明式编程范式，让UI代码更加简洁、可维护。设计遵循Material Design 3规范，确保界面美观、交互流畅。
-
-### 悬浮窗技术
-粉笔标注的悬浮窗基于Android WindowManager实现，使用TYPE_APPLICATION_OVERLAY类型，这是Android 8.0+引入的新型悬浮窗类型，相比旧版具有更好的安全性和兼容性。悬浮窗使用前台服务承载，服务类型为FOREGROUND_SERVICE_TYPE_SPECIAL_USE和MEDIA_PROJECTION，符合Android 14+的最新要求。
-
-### 屏幕捕获机制
-屏幕捕获使用Android官方的MediaProjection API，这是唯一官方支持的屏幕捕获方式。捕获过程分为几个步骤：首先在Activity中请求用户授权，授权数据传递给前台服务，前台服务中初始化MediaProjection，创建VirtualDisplay虚拟显示器，通过ImageReader读取屏幕图像数据，最后转换为Bitmap进行后续处理。整个过程完全符合Android安全规范。
-
-### 绘图引擎设计
-绘图引擎基于Jetpack Compose的Canvas组件构建，这是一个高性能的2D绘图API。引擎采用路径记录机制：每次绘制都会记录一系列带压感和时间戳的坐标点，形成一条路径。渲染时，使用二次贝塞尔曲线算法将坐标点连接成平滑曲线，根据压感调整每个点的笔触粗细和透明度，最后使用抗锯齿渲染确保边缘平滑。
-
-### 智能橡皮擦算法
-智能橡皮擦的核心是路径碰撞检测算法。橡皮擦被表示为一个圆形区域，每次移动时，系统会遍历所有已绘制的路径，检查路径中的任意点是否落在橡皮擦圆形范围内。如果检测到碰撞，整条路径会被标记为删除。为了支持撤销操作，删除前会先保存当前状态到历史栈。这种算法的时间复杂度是O(n*m)，其中n是路径数量，m是每条路径的点数，在实际使用中性能表现良好。
-
-### 状态管理架构
-应用使用响应式状态管理架构。核心状态使用Kotlin Flow的StateFlow表示，UI组件订阅这些状态，状态变化时UI自动更新。绘图工具、颜色、粗细等配置都是状态，工具栏可见性、橡皮擦位置也是状态。这种架构让代码更加清晰，状态变化可追踪，减少了bug的产生。
-
-### 数据持久化方案
-用户配置使用Android SharedPreferences存储，这是一个轻量级的键值对存储方案，适合保存少量配置数据。权限授权状态、工具配置、工具栏位置、透明度设置等都会持久化。对于屏幕捕获权限，由于权限Intent无法序列化，我们采用内存缓存+SharedPreferences标志位的混合方案，既保证了功能可用，又符合Android的安全限制。
-
----
-
-## 📱 使用指南
-
-### 初次使用
-
-#### 第一步：授予悬浮窗权限
-打开应用后，首先需要授予悬浮窗权限。点击"授予悬浮窗权限"按钮，系统会跳转到设置页面，找到"粉笔标注"应用，打开"允许显示在其他应用上层"开关。这个权限允许应用在任何界面上显示绘图工具。
-
-#### 第二步：授予屏幕捕获权限
-返回应用，点击"授予屏幕捕获权限"按钮。系统会弹出一个对话框，显示"粉笔标注将开始捕获您的屏幕上显示的所有内容"，点击"立即开始"按钮授权。这个权限允许应用进行屏幕截图。注意：此权限在每次应用启动时都需要重新授予，这是Android的安全限制。
-
-#### 第三步：授予存储权限
-继续点击"授予存储权限"按钮。在Android 13+设备上，系统会弹出"允许粉笔标注访问设备中的照片和视频吗"对话框，选择"允许"。这个权限允许应用将截图保存到系统相册。
-
-#### 第四步：启动服务
-所有权限授予完成后，"启动服务"按钮会变为可用状态。点击此按钮，应用会启动标注服务并最小化到后台。此时屏幕上会出现一个蓝色的悬浮按钮，标注功能已就绪。
-
-### 日常使用
-
-#### 开启标注模式
-在任何应用界面，点击蓝色悬浮按钮，即可进入标注模式。悬浮按钮会消失，取而代之的是一个工具栏，显示在屏幕边缘（默认右侧中间位置）。整个屏幕现在变成了一块画布，可以自由绘制。
-
-#### 选择绘图工具
-工具栏顶部显示三个主要工具图标：画笔（笔形图标）、荧光笔（荧光笔形图标）、橡皮擦（橡皮擦形图标）。点击任一图标即可切换工具，当前选中的工具会显示高亮边框。
-
-#### 选择颜色
-选中画笔或荧光笔后，点击工具栏中的色板图标（调色盘形状），会展开颜色选择面板，显示所有可用颜色的圆形色块。点击任意色块即可切换颜色，当前选中的颜色会显示外圈高亮。
-
-#### 调节粗细
-点击工具栏中的粗细图标（三条粗细不同的线），会展开粗细调节面板，显示一个滑块。左右拖动滑块即可实时调节笔触粗细，面板上方会显示当前数值（如"5px"）。松开滑块后设置立即生效。
-
-#### 开始绘制
-设置好工具、颜色、粗细后，直接在屏幕上滑动手指即可绘制。绘制过程流畅，没有明显延迟。如果使用触控笔，笔触粗细会随着按压力度自动变化，轻触画细线，重按画粗线。
-
-#### 使用橡皮擦
-切换到橡皮擦工具后，屏幕上会显示一个半透明的圆圈和十字准星，跟随你的手指移动。圆圈表示橡皮擦的范围，十字准星指示圆心位置。只要圆圈触碰到任何标注路径，整条路径就会立即消失。不需要精确擦除，操作非常方便。
-
-#### 撤销操作
-如果画错了，可以点击工具栏中的撤销按钮（左箭头图标）撤销上一步操作。也可以使用快捷手势：用两根手指同时快速点击屏幕两次，效果相同。撤销功能最多支持回退50步。
-
-#### 清空画布
-如果想清空所有标注重新开始，点击工具栏中的清空按钮（垃圾桶图标）。系统会立即清除所有路径，画布恢复干净状态。清空操作也可以撤销。
-
-#### 保存截图
-标注完成后，点击工具栏中的截图按钮（相机图标）。系统会自动隐藏工具栏和所有UI，捕获当前屏幕和标注内容，合成为一张图片，保存到系统相册。保存成功后会显示"截图已保存到相册"提示。整个过程大约需要1秒钟。
-
-#### 退出标注模式
-完成标注后，点击工具栏底部的退出按钮（×图标），即可退出标注模式。工具栏消失，蓝色悬浮按钮重新出现在屏幕边缘。所有标注内容会被清空（除非已经截图保存）。
-
-#### 移动工具栏
-如果工具栏位置不方便，可以长按工具栏的空白区域（工具图标之间的灰色部分），然后拖动到任意位置。松开手指后，工具栏会自动吸附到最近的屏幕边缘。新位置会被记忆，下次使用时仍在相同位置。
-
-#### 切换工具栏布局
-点击工具栏底部的布局切换按钮（横竖两条线的图标），可以在竖排和横排布局之间切换。竖排布局时，工具纵向排列，适合吸附在左右边缘；横排布局时，工具横向排列，适合吸附在上下边缘。布局偏好会自动保存。
-
-### 高级设置
-
-#### 调节荧光笔透明度
-打开应用主界面，点击右上角的设置图标（齿轮形状），进入设置页面。第一项是"荧光笔透明度"，显示一个滑块和当前透明度值（如"40%"）。左右拖动滑块可以调节透明度，范围从10%（几乎完全透明）到80%（几乎完全不透明）。设置会实时保存，立即影响荧光笔工具。
-
-#### 开启自动折叠功能
-在设置页面，第二项是"绘图时自动折叠工具栏"开关。打开此开关后，在标注模式下，一旦开始绘制，颜色选择和粗细调节面板会自动折叠，只保留主工具栏图标，最大化可视区域。停止绘制后面板不会自动展开，需要手动点击才会重新显示。这个功能适合喜欢简洁界面的用户。
-
-#### 查看版本信息
-设置页面底部显示当前应用版本号（如"版本 1.2.2"）。点击版本号会显示完整的版本历史和更新日志，帮助你了解应用的最新改进。
-
----
-
-## 🔒 隐私与安全
-
-### 隐私承诺
-粉笔标注是一款离线运行的应用，不收集用户数据，不上传任何信息到云端或第三方服务器。应用请求的所有权限都仅用于本地功能实现，没有任何隐私风险。
-
-### 权限说明
-
-**悬浮窗权限（SYSTEM_ALERT_WINDOW）**
-这是应用的核心权限，允许在其他应用上层显示悬浮窗。粉笔标注使用此权限显示悬浮按钮和绘图工具栏，实现全局标注功能。此权限不会被滥用，仅在用户主动启动服务后才会显示悬浮内容。
-
-**前台服务权限（FOREGROUND_SERVICE）**
-允许应用以前台服务形式运行，确保标注功能不会被系统随意杀死。前台服务会在通知栏显示一个持久通知，用户可以随时停止服务。
-
-**屏幕捕获权限（MEDIA_PROJECTION）**
-允许应用捕获屏幕内容，用于截图功能。每次应用启动时都需要用户重新授权，这是Android的强制要求，确保用户始终知道应用正在捕获屏幕。捕获的图像仅用于与标注合成并保存到本地相册。
-
-**存储权限（READ_MEDIA_IMAGES / WRITE_EXTERNAL_STORAGE）**
-允许应用将截图保存到系统相册。Android 13+使用READ_MEDIA_IMAGES权限，仅允许访问图片；Android 12及以下使用WRITE_EXTERNAL_STORAGE权限。应用仅会写入自己创建的截图文件，不会读取或修改用户的其他文件。
-
-**通知权限（POST_NOTIFICATIONS）**
-Android 13+引入的新权限，允许应用显示通知。粉笔标注仅使用此权限显示前台服务通知，不会发送任何营销或广告通知。
-
-
-## 🚀 下载安装
+## 🚀 安装
 
 ### 系统要求
-- **最低版本**：Android 9.0 (API 28)
-- **推荐版本**：Android 10.0 (API 29) 或更高
-- **设备内存**：建议2GB以上
-- **屏幕分辨率**：建议1080p以上
-- **存储空间**：应用大小约28MB，需要额外空间保存截图
-
-### 下载方式
-
-#### 从GitHub下载（推荐）
-访问项目的[Releases页面](https://github.com/1444170707/fenbi_biaozhu/releases)，下载最新版本的APK文件。每个版本都包含详细的更新说明，建议下载标记为"Latest"的最新稳定版本。
-
+- Android 9.0 (API 28) 或更高版本
+- 建议设备内存 2GB 以上
+- 建议屏幕分辨率 1080p 以上
 
 ### 安装步骤
-1. 下载APK文件到Android设备
-2. 打开APK文件，系统会提示"是否允许安装来自此来源的应用"
-3. 选择"设置"，打开"允许安装未知应用"开关
-4. 返回，再次打开APK文件
-5. 点击"安装"按钮，等待安装完成
-6. 点击"打开"按钮启动应用
+
+#### 方式一：下载APK安装
+1. 从 [Releases](../../releases) 页面下载最新版本的APK文件
+2. 在手机上打开APK文件进行安装
+3. 授予必要的权限（悬浮窗权限、屏幕捕获权限、存储权限）
+
+#### 方式二：从源码构建
+```bash
+# 克隆仓库
+git clone https://github.com/yourusername/annotation.git
+cd annotation
+
+# 使用Gradle构建
+./gradlew assembleDebug
+
+# APK输出路径
+# app/build/outputs/apk/debug/app-debug.apk
+```
 
 ---
 
-## 🛣️ 未来规划
+## 📱 使用
 
-### 近期计划（3-6个月）
+### 快速开始
 
-**形状工具**
-计划新增直线、圆形、矩形、箭头等形状工具。用户可以通过拖动来绘制标准形状，而不需要手动绘制。箭头工具特别适合标注方向和指示位置，将成为最实用的功能之一。
+1. **授予权限**
+   - 打开应用，在主界面依次授予以下权限：
+     - ✅ 悬浮窗权限：用于显示绘图工具
+     - ✅ 屏幕捕获权限：用于截图功能
+     - ✅ 存储权限：用于保存截图到相册
 
-**文字标注**
-计划支持文字输入和标注。用户可以在屏幕上添加文字说明，选择字体大小和颜色。文字工具将大大扩展应用的标注能力，特别适合添加详细说明和注释。
+2. **启动服务**
+   - 授权完成后，点击"启动服务"按钮
+   - 屏幕上会出现一个蓝色悬浮按钮
 
-**更多笔刷样式**
-计划新增虚线、点线、毛笔效果等多种笔刷样式。不同的笔刷适合不同的标注场景，让标注更加专业和多样化。
+3. **开始标注**
+   - 点击悬浮按钮进入标注模式
+   - 选择绘图工具开始在屏幕上绘制
 
-**性能优化**
-计划进一步优化绘图引擎，支持更复杂的标注场景。即使绘制数百条路径，也能保持流畅不卡顿。同时优化内存占用，减少应用对系统资源的消耗。
+4. **截图保存**
+   - 点击工具栏中的截图按钮
+   - 截图将自动保存到系统相册
 
-### 中期计划（6-12个月）
+### 详细功能说明
 
-**标注历史持久化**
-计划实现标注内容的持久化保存。用户可以保存当前的标注状态，随时加载和继续编辑。还可以为不同场景创建多个标注模板，快速应用常用标注。
+#### 🖌️ 绘图工具使用
 
-**标注模板功能**
-计划提供一些预设的标注模板，比如"问题反馈模板"包含箭头和文字框，"教学标注模板"包含高亮和圆圈等。用户也可以自定义模板并保存，提高标注效率。
+**画笔 ✏️**
+- 点击画笔图标选择画笔工具
+- 点击色板图标选择颜色（8种预设颜色）
+- 点击笔触图标调节粗细（1-20像素）
+- 完全不透明，适合绘制精确的线条和图形
 
-**多指手势优化**
-计划支持更多手势操作，比如双指缩放画布、双指平移画布、三指下滑截图等。多指手势将让操作更加灵活高效。
+**荧光笔 🖍️**
+- 点击荧光笔图标选择荧光笔工具
+- 点击色板图标选择颜色（6种预设颜色）
+- 点击笔触图标调节粗细（10-50像素）
+- 在设置中可调节透明度（10%-80%）
+- 半透明效果，适合高亮标记重点区域
 
-**暗色主题**
-计划支持暗色主题，应用界面会自动跟随系统主题变化。暗色主题在夜间使用时更加舒适，也更省电。
+**橡皮擦 🧹**
+- 点击橡皮擦图标选择橡皮擦工具
+- 点击大小图标调节橡皮擦大小（20-100像素）
+- 触碰任何路径即可删除整条路径（按路径擦除）
+- 橡皮擦会显示半透明圆圈和十字准星
 
-### 长期计划（1年以上）
+#### 🔧 工具栏操作
 
-**云端同步**
-计划实现标注内容的云端同步功能。用户可以将标注保存到云端，在多个设备间同步，也可以分享给其他用户。这需要构建后端服务，是一个较大的工程。
+**移动工具栏**
+- 长按工具栏拖动到任意位置
+- 松开后自动吸附到最近的屏幕边缘
 
-**协作标注**
-计划支持多人协作标注。多个用户可以同时在同一个屏幕上标注，实时看到彼此的操作。这个功能特别适合远程会议和团队协作场景。
+**切换布局**
+- 点击工具栏底部的切换图标
+- 可在竖排和横排布局间切换
+- 布局偏好自动保存
 
-**视频标注**
-计划支持视频录制+标注功能。用户可以录制屏幕操作视频，同时进行标注，生成带标注的教学视频。这将大大扩展应用的使用场景。
+**折叠菜单**
+- 二级菜单（颜色、粗细选择）可自动折叠
+- 在设置中可开启"绘图时自动折叠"功能
 
-**AI辅助标注**
-计划集成AI功能，比如自动识别屏幕中的文字、图像、UI元素，提供智能标注建议。AI可以帮助用户更快速地定位和标注关键信息。
+#### ⚡ 快捷操作
+
+- **撤销**：双指同时快速点击屏幕两次（或点击撤销按钮）
+- **清空**：点击工具栏中的清空图标删除所有标注
+- **截图**：点击截图图标保存当前屏幕+标注
+- **退出**：点击退出图标返回悬浮按钮模式
 
 ---
 
+## 🛠️ 技术栈
 
-## 📞 联系与支持
+### 开发框架
+- **Kotlin** - 主要开发语言
+- **Jetpack Compose** - 现代化声明式UI框架
+- **Material Design 3** - Google最新UI设计规范
 
-### 项目主页
-[GitHub仓库](https://github.com/1444170707/fenbi_biaozhu)
+### 核心技术
 
+#### 前台服务 & 悬浮窗
+- `WindowManager` - 管理悬浮窗视图
+- `TYPE_APPLICATION_OVERLAY` - 系统级悬浮窗类型
+- `FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION` - 屏幕捕获前台服务类型
+- `FOREGROUND_SERVICE_TYPE_SPECIAL_USE` - 特殊用途前台服务类型
 
-### 邮件联系
-1444170707@qq.com
+#### 屏幕捕获
+- `MediaProjection API` - Android官方屏幕捕获API
+- `VirtualDisplay` - 虚拟显示器用于捕获屏幕
+- `ImageReader` - 读取屏幕图像数据
+- 自动隐藏UI机制确保截图纯净
+
+#### 绘图引擎
+- Compose `Canvas` - 高性能绘图画布
+- **贝塞尔曲线平滑算法** - 使路径更加流畅自然
+- **压感支持** - 根据触控压力调整笔触粗细和透明度
+- **路径碰撞检测** - 实现智能橡皮擦按路径擦除
+
+#### 数据持久化
+- `SharedPreferences` - 保存用户配置和权限状态
+- `StateFlow` & `MutableState` - 响应式状态管理
+- 工具配置、工具栏位置自动保存
+
+### 项目架构
+```
+app/
+├── drawing/                  # 绘图引擎核心
+│   └── DrawingEngine.kt      # 绘图逻辑管理、状态管理、历史记录
+├── model/                    # 数据模型
+│   ├── DrawingModels.kt      # 绘图相关数据类（路径、配置等）
+│   └── VersionInfo.kt        # 版本信息
+├── service/                  # 服务层
+│   └── OverlayService.kt     # 悬浮窗前台服务、生命周期管理
+├── ui/                       # UI组件
+│   ├── DrawingCanvas.kt      # 绘图画布组件、手势检测
+│   ├── OverlayContent.kt     # 悬浮层内容、工具栏定位
+│   └── ToolbarView.kt        # 工具栏组件、工具选择
+└── utils/                    # 工具类
+    ├── ScreenCaptureManager.kt    # 屏幕捕获管理、MediaProjection
+    ├── ScreenshotHelper.kt        # 截图保存、Bitmap处理
+    ├── PermissionHelper.kt        # 权限检查和请求
+    └── PreferencesManager.kt      # 配置管理
+```
 
 ---
 
+## 🎯 核心实现亮点
+
+### 1. 智能屏幕捕获
+
+```kotlin
+// 在前台服务中初始化MediaProjection（Android 14+要求）
+fun initializeMediaProjection(resultCode: Int, data: Intent): Boolean {
+    val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE)
+        as MediaProjectionManager
+    mediaProjection = projectionManager.getMediaProjection(resultCode, data)
+    return mediaProjection != null
+}
+
+// 捕获屏幕并合成标注
+fun captureScreenWithAnnotation(
+    drawingEngine: DrawingEngine,
+    onSuccess: (Uri) -> Unit,
+    onError: (Exception) -> Unit
+) {
+    // 1. 隐藏工具栏UI
+    toolbarVisibleState.value = false
+
+    // 2. 延迟等待UI更新
+    handler.postDelayed({
+        // 3. 创建VirtualDisplay捕获屏幕
+        // 4. 转换为Bitmap
+        // 5. 在Bitmap上绘制标注路径
+        // 6. 保存到系统相册
+        // 7. 恢复工具栏UI显示
+        toolbarVisibleState.value = true
+    }, 100)
+}
+```
+
+### 2. 按路径智能橡皮擦
+
+```kotlin
+// 路径与橡皮擦碰撞检测
+private fun isPathIntersectingEraser(
+    path: DrawingPath,
+    eraserPosition: Offset,
+    eraserRadius: Float
+): Boolean {
+    // 检查路径中的任何点是否在橡皮擦范围内
+    return path.points.any { point ->
+        val dx = point.offset.x - eraserPosition.x
+        val dy = point.offset.y - eraserPosition.y
+        val distance = sqrt(dx * dx + dy * dy)
+        distance <= eraserRadius
+    }
+}
+
+// 按路径擦除
+private fun erasePathsAt(eraserPosition: Offset) {
+    val eraserRadius = _eraserConfig.value.size / 2
+    val pathsToRemove = paths.filter { path ->
+        isPathIntersectingEraser(path, eraserPosition, eraserRadius)
+    }
+
+    // 如果有路径被擦除，保存到历史记录以支持撤销
+    if (pathsToRemove.isNotEmpty()) {
+        saveToHistory()
+        paths.removeAll(pathsToRemove)
+    }
+}
+```
+
+### 3. 贝塞尔曲线平滑
+
+```kotlin
+// 使用二次贝塞尔曲线平滑路径，使绘制更流畅
+val drawPath = Path()
+drawPath.moveTo(firstPoint.offset.x, firstPoint.offset.y)
+
+for (i in 1 until path.points.size) {
+    val prevPoint = path.points[i - 1]
+    val currentPoint = path.points[i]
+
+    if (i < path.points.size - 1) {
+        val controlPoint = Offset(
+            (prevPoint.offset.x + currentPoint.offset.x) / 2,
+            (prevPoint.offset.y + currentPoint.offset.y) / 2
+        )
+        drawPath.quadraticTo(
+            prevPoint.offset.x,
+            prevPoint.offset.y,
+            controlPoint.x,
+            controlPoint.y
+        )
+    } else {
+        drawPath.lineTo(currentPoint.offset.x, currentPoint.offset.y)
+    }
+}
+```
+
+### 4. 压感支持
+
+```kotlin
+// 计算压感调整后的笔触宽度
+fun calculatePressureAdjustedWidth(baseWidth: Float, pressure: Float): Float {
+    // 最小宽度为基础宽度的30%，最大为100%
+    val minScale = 0.3f
+    val maxScale = 1.0f
+    val scale = minScale + (maxScale - minScale) * pressure
+    return baseWidth * scale
+}
+
+// 计算压感调整后的透明度（仅荧光笔）
+fun calculatePressureAdjustedAlpha(baseAlpha: Float, pressure: Float): Float {
+    // 轻触时透明度降低，重压时接近完全不透明
+    val minScale = 0.5f
+    val maxScale = 1.0f
+    val scale = minScale + (maxScale - minScale) * pressure
+    return baseAlpha * scale
+}
+```
+
+---
+
+## 📋 权限说明
+
+### 必需权限
+
+```xml
+<!-- 悬浮窗权限 -->
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+<!-- 前台服务权限 -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+
+<!-- 通知权限（Android 13+） -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+<!-- 存储权限（Android 13+） -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+<!-- 存储权限（Android 10-12） -->
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+```
+
+### 为什么需要这些权限？
+
+| 权限 | 用途 | 是否必需 |
+|------|------|---------|
+| SYSTEM_ALERT_WINDOW | 在其他应用上层显示悬浮窗和绘图工具 | ✅ 必需 |
+| FOREGROUND_SERVICE | 确保标注功能在后台稳定运行 | ✅ 必需 |
+| FOREGROUND_SERVICE_MEDIA_PROJECTION | 在前台服务中进行屏幕捕获（Android 14+要求） | ✅ 必需 |
+| POST_NOTIFICATIONS | 显示前台服务通知 | ✅ 必需 |
+| READ_MEDIA_IMAGES / WRITE_EXTERNAL_STORAGE | 将截图保存到系统相册 | ✅ 必需 |
+
+**隐私承诺**：所有权限仅用于本地功能，不上传任何数据到云端或第三方服务器。
+
+---
+
+## 🔧 配置与设置
+
+### 应用内设置
+
+进入应用主界面，点击右上角设置图标可配置：
+
+- **荧光笔透明度**：调节荧光笔的透明度（10%-80%）
+- **自动折叠工具栏**：开启后绘图时自动折叠二级菜单
+- **版本信息**：查看当前应用版本
+
+### 高级配置（开发者）
+
+开发者可以修改以下常量自定义行为：
+
+```kotlin
+// DrawingEngine.kt
+private val maxHistorySize = 50  // 撤销历史记录数量
+
+// ScreenCaptureManager.kt
+handler.postDelayed({ ... }, 300)  // VirtualDisplay渲染等待时间（ms）
+
+// OverlayService.kt
+handler.postDelayed({ ... }, 100)  // UI隐藏等待时间（ms）
+```
+
+---
+
+## 📊 版本历史
+
+### v1.2.2 (2025-01-10) - 当前版本
+- ✨ **新功能**：优化橡皮擦，实现按路径智能擦除（触碰即删除整条路径）
+- ✨ **新功能**：截图时自动隐藏工具栏和Toast弹窗，确保截图纯净
+- 🐛 **修复**：修复权限状态显示不准确的问题
+- 🐛 **修复**：修复MediaProjection必须在前台服务初始化的问题（Android 14+）
+- 🐛 **修复**：修复Service Context获取Display的兼容性问题
+- 🎨 **优化**：橡皮擦显示半透明圆圈和十字准星，操作更精确
+
+### v1.2.0 (2024-12-20)
+- ✨ 添加荧光笔工具和透明度设置
+- ✨ 支持压感检测和笔触粗细调节
+- ✨ 添加自动折叠工具栏功能
+- 🎨 优化工具栏UI和交互体验
+- 🎨 改进颜色选择和笔触调节界面
+
+### v1.0.0 (2024-11-15)
+- 🎉 初始版本发布
+- ✨ 基础绘图功能（画笔、橡皮擦）
+- ✨ 屏幕截图功能
+- ✨ 悬浮窗支持
+- ✨ 权限管理系统
+- ✨ 前台服务保活
+
+---
+
+## 🚧 未来规划
+
+### 近期计划
+- [ ] 添加形状工具（直线、圆形、矩形、箭头）
+- [ ] 支持文字输入和标注
+- [ ] 添加更多笔刷样式（虚线、点线、毛笔效果）
+- [ ] 优化性能，支持更复杂的标注场景
+
+### 长期规划
+- [ ] 标注历史记录持久化
+- [ ] 标注模板功能（预设常用标注）
+- [ ] 多指手势优化（缩放、平移画布）
+- [ ] 暗色主题支持
+- [ ] 云端同步和分享功能
+- [ ] 性能分析和优化工具
+
+---
+
+## 🤝 贡献
+
+欢迎贡献代码、报告问题或提出新功能建议！
+
+### 贡献方式
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 报告问题
+
+在 [Issues](../../issues) 页面提交问题时，请包含：
+- 设备型号和Android版本
+- 详细的问题描述
+- 复现步骤
+- 相关截图或日志（如有）
+
+### 代码规范
+
+- 使用Kotlin编写代码
+- 遵循Android官方编码规范
+- 为新功能编写单元测试
+- 提交前运行`./gradlew test`确保测试通过
+
+---
+
+## 📄 开源协议
+
+本项目采用 MIT 协议开源 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+```
+MIT License
+
+Copyright (c) 2025
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## 🙏 致谢
+
+感谢以下开源项目和资源：
+
+- [Jetpack Compose](https://developer.android.com/jetpack/compose) - 现代化Android UI框架
+- [Material Design 3](https://m3.material.io/) - Google设计规范
+- [Kotlin](https://kotlinlang.org/) - 优雅的现代编程语言
+- [Android Developer Documentation](https://developer.android.com/) - 完善的官方文档
+
+---
+
+## 📞 联系方式
+
+- 项目主页：[GitHub Repository](https://github.com/yourusername/annotation)
+- 问题反馈：[GitHub Issues](../../issues)
+- 讨论区：[GitHub Discussions](../../discussions)
+
+---
+
+## 📈 性能指标
+
+- **响应延迟**：<100ms
+- **内存占用**：~30-50MB
+- **CPU占用**：<5%（绘图时）
+- **支持路径数**：无限制
+- **历史记录**：最多保存50步操作
+- **最低系统要求**：Android 9.0 (API 28)
+- **推荐系统**：Android 10.0 (API 29) 或更高
+
+---
 
 <div align="center">
 
-## ⭐ 如果这个项目对你有帮助，请给个Star支持一下！
+**如果这个项目对你有帮助，请给个 ⭐️ Star 支持一下！**
 
-**让标注变得简单、直观、专业**
-
-Made with ❤️ by Abner
-
-[⬆ 回到顶部](#粉笔标注---android-全局屏幕标注工具)
+Made with ❤️ by Developer
 
 </div>
-

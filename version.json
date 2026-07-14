@@ -1,8 +1,0 @@
-{
-  "latestVersionCode": 9,    // 最新版本号
-  "latestVersionName": "1.3.3", // 版本名称
-  "updateDesc": "1. 添加自定义画笔、荧光笔颜色的顺序和工具栏的顺序，并修复相关逻辑问题\n2. 添加关闭首页待开发按钮的开关，位于“设置-其他”\n3. 修复笔设置自定义相同的颜色的问题\n4. 修复二次启动标注服务闪退的问题\n5. 优化粉笔APP的底层逻辑\n6. 无", // 更新说明
-  "downloadUrl": "https://d.feiliupan.com/t/135549306957467648/fenbi.apk", // APK下载地址
-  "forceUpdate": false,         // 是否强制更新
-  "minSupportVersion": 6      // 最低支持版本
-}
