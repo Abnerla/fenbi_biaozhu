@@ -15,8 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
-import com.example.annotation.model.DrawingTool
-import com.example.annotation.model.StylusButtonAction
+import android.view.MotionEvent
 import com.example.annotation.service.GestureForwardingAccessibilityService
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -53,7 +52,8 @@ fun OverlayContent(
     onToolbarPositionChanged: (Float, Float) -> Unit = { _, _ -> },
     onOrientationChanged: (ToolbarOrientation) -> Unit = {},
     toolbarVisible: Boolean = true,
-    preferencesManager: com.example.annotation.utils.PreferencesManager? = null
+    preferencesManager: com.example.annotation.utils.PreferencesManager? = null,
+    onStylusMotionEvent: (MotionEvent) -> Boolean = { false }
 ) {
     // 二级菜单显示状态
     val secondaryMenuState = remember { mutableStateOf<SecondaryMenuType?>(null) }
@@ -180,19 +180,7 @@ fun OverlayContent(
                     duration
                 )
             },
-            onStylusAction = { action ->
-                when (action) {
-                    StylusButtonAction.NONE -> Unit
-                    StylusButtonAction.PEN -> drawingEngine.setTool(DrawingTool.PEN)
-                    StylusButtonAction.HIGHLIGHTER -> drawingEngine.setTool(DrawingTool.HIGHLIGHTER)
-                    StylusButtonAction.ERASER -> drawingEngine.setTool(DrawingTool.ERASER)
-                    StylusButtonAction.UNDO -> drawingEngine.undo()
-                    StylusButtonAction.REDO -> drawingEngine.redo()
-                    StylusButtonAction.CLEAR -> drawingEngine.clearAll()
-                    StylusButtonAction.SCREENSHOT -> onScreenshot()
-                    StylusButtonAction.EXIT_ANNOTATION -> onExit()
-                }
-            },
+            onStylusMotionEvent = onStylusMotionEvent,
             onDrawingStart = {
                 // 如果启用了自动折叠，且二级菜单正在显示，则折叠它
                 if (autoCollapseEnabled && secondaryMenuState.value != null) {

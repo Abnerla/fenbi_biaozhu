@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.*
 import com.example.annotation.utils.PreferencesManager
-import com.example.annotation.utils.StylusButtonGestureDetector
 import kotlin.math.hypot
 
 private class CanvasInputState {
@@ -45,7 +44,7 @@ fun DrawingCanvas(
     onTwoFingerTap: () -> Unit = {},
     onThreeFingerTap: () -> Unit = {},
     onTwoFingerSwipe: (Offset, Offset, Long) -> Unit = { _, _, _ -> },
-    onStylusAction: (StylusButtonAction) -> Unit = {},
+    onStylusMotionEvent: (MotionEvent) -> Boolean = { false },
     onDrawingStart: () -> Unit = {}
 ) {
     val currentTool by drawingEngine.currentTool.collectAsState()
@@ -58,25 +57,6 @@ fun DrawingCanvas(
     val density = LocalDensity.current
     val tapSlop = with(density) { 24.dp.toPx() }
     val swipeThreshold = with(density) { 48.dp.toPx() }
-    val latestStylusAction by rememberUpdatedState(onStylusAction)
-    val stylusDetector = remember {
-        StylusButtonGestureDetector { button, pressType ->
-            val action = preferencesManager?.getStylusButtonMappings()?.actionFor(button, pressType)
-                ?: StylusButtonAction.NONE
-            latestStylusAction(action)
-        }
-    }
-
-    DisposableEffect(stylusDetector) {
-        onDispose { stylusDetector.dispose() }
-    }
-
-    fun processStylusButtons(event: MotionEvent) {
-        if (preferencesManager?.getStylusEnabled() != true) return
-        val masks = preferencesManager.getStylusButtonMasks()
-        stylusDetector.process(event.buttonState, masks.primary, masks.secondary, event.eventTime)
-    }
-
     fun centroid(event: MotionEvent): Offset {
         var x = 0f
         var y = 0f
@@ -88,7 +68,7 @@ fun DrawingCanvas(
     }
 
     fun handleMotionEvent(event: MotionEvent): Boolean {
-        processStylusButtons(event)
+        onStylusMotionEvent(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 inputState.reset()

@@ -27,10 +27,22 @@ class StylusButtonGestureDetector(
         update(StylusButton.SECONDARY, buttonState and secondaryMask != 0, eventTime)
     }
 
+    fun processTransition(
+        button: StylusButton,
+        pressed: Boolean,
+        eventTime: Long
+    ) {
+        update(button, pressed, eventTime)
+    }
+
     fun dispose() {
         states.values.forEach { state ->
             state.pendingSingle?.let(handler::removeCallbacks)
             state.pendingLong?.let(handler::removeCallbacks)
+            state.pressed = false
+            state.longTriggered = false
+            state.pendingSingle = null
+            state.pendingLong = null
         }
     }
 

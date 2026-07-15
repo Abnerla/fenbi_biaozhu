@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -49,6 +51,7 @@ import com.example.annotation.utils.PermissionHelper
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.ScreenCaptureManager
+import com.example.annotation.utils.StylusInputMonitor
 import kotlinx.coroutines.launch
 import android.app.Activity
 
@@ -79,6 +82,21 @@ class MainActivity : ComponentActivity() {
     // 服务运行状态
     private var isServiceRunning by mutableStateOf(false)
     private var themeMode by mutableStateOf(AppThemeMode.SYSTEM)
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        StylusInputMonitor.publishMotion(event)
+        return super.dispatchGenericMotionEvent(event)
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        StylusInputMonitor.publishMotion(event)
+        return super.dispatchTouchEvent(event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        StylusInputMonitor.publishKey(event)
+        return super.dispatchKeyEvent(event)
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()

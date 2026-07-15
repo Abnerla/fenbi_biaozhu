@@ -5,7 +5,9 @@ import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import com.example.annotation.utils.StylusInputMonitor
 
 class GestureForwardingAccessibilityService : AccessibilityService() {
     companion object {
@@ -28,6 +30,9 @@ class GestureForwardingAccessibilityService : AccessibilityService() {
             endY,
             durationMillis
         ) ?: false
+
+        fun takeSystemScreenshot(): Boolean =
+            instance?.performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT) ?: false
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -38,6 +43,14 @@ class GestureForwardingAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
+
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        if (!OverlayService.isAnnotationModeActive) {
+            if (StylusInputMonitor.isLearning) StylusInputMonitor.publishKey(event, force = true)
+            return false
+        }
+        return OverlayService.processStylusKeyEvent(event)
+    }
 
     override fun onInterrupt() = Unit
 

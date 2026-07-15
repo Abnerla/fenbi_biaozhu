@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
@@ -46,14 +47,13 @@ import com.example.annotation.R
 import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.DrawingTool
 import com.example.annotation.model.StylusButtonAction
-import com.example.annotation.model.StylusProfile
 import com.example.annotation.ui.OverlayContent
 import com.example.annotation.ui.theme.AnnotationTheme
 import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
-import com.example.annotation.utils.StylusButtonGestureDetector
+import com.example.annotation.utils.StylusInputRouter
 import android.widget.Toast
 import com.example.annotation.ScreenCapturePermissionActivity
 
@@ -69,12 +69,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     private val drawingEngine = DrawingEngine()
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var screenCaptureManager: ScreenCaptureManager
-    private val stylusButtonDetector by lazy {
-        StylusButtonGestureDetector { button, pressType ->
-            val action = preferencesManager.getStylusButtonMappings().actionFor(button, pressType)
-            executeStylusAction(action)
-        }
-    }
+    private lateinit var stylusInputRouter: StylusInputRouter
     private val themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
 
     // 工具栏可见性状态 - 用于截图时隐藏UI
@@ -169,6 +164,9 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             activeInstance?.updateFloatingButtonSuppressed(suppressed)
         }
 
+        fun processStylusKeyEvent(event: KeyEvent): Boolean =
+            activeInstance?.stylusInputRouter?.processKeyEvent(event) ?: false
+
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -203,6 +201,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // 初始化 PreferencesManager
         preferencesManager = PreferencesManager(this)
+        stylusInputRouter = StylusInputRouter(preferencesManager, ::executeStylusAction)
         themeModeState.value = preferencesManager.getThemeMode()
 
         // 获取ScreenCaptureManager单例实例
@@ -362,7 +361,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // 停止屏幕捕获（但不清除权限信息，以便下次使用）
         screenCaptureManager.stopMediaProjection()
-        stylusButtonDetector.dispose()
+        stylusInputRouter.dispose()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
 
@@ -703,8 +702,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeLifecycleOwner(this@OverlayService)
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
             setOnGenericMotionListener { _, event ->
-                processStylusGenericMotion(event)
-                false
+                stylusInputRouter.processMotionEvent(event)
             }
 
             setContent {
@@ -738,7 +736,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                             saveToolbarOrientation(orientation)
                         },
                         toolbarVisible = toolbarVisible,
-                        preferencesManager = preferencesManager
+                        preferencesManager = preferencesManager,
+                        onStylusMotionEvent = stylusInputRouter::processMotionEvent
                     )
                 }
             }
@@ -783,14 +782,9 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         runCatching { windowManager.updateViewLayout(view, params) }
     }
 
-    private fun processStylusGenericMotion(event: MotionEvent) {
-        if (!preferencesManager.getStylusEnabled()) return
-        val masks = preferencesManager.getStylusButtonMasks()
-        stylusButtonDetector.process(event.buttonState, masks.primary, masks.secondary, event.eventTime)
-    }
-
     private fun executeStylusAction(action: StylusButtonAction) {
         when (action) {
+            StylusButtonAction.VENDOR_DEFAULT -> Unit
             StylusButtonAction.NONE -> Unit
             StylusButtonAction.PEN -> drawingEngine.setTool(DrawingTool.PEN)
             StylusButtonAction.HIGHLIGHTER -> drawingEngine.setTool(DrawingTool.HIGHLIGHTER)
@@ -798,7 +792,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             StylusButtonAction.UNDO -> drawingEngine.undo()
             StylusButtonAction.REDO -> drawingEngine.redo()
             StylusButtonAction.CLEAR -> drawingEngine.clearAll()
-            StylusButtonAction.SCREENSHOT -> handleScreenshot()
+            StylusButtonAction.SCREENSHOT -> handleStylusScreenshot()
             StylusButtonAction.EXIT_ANNOTATION -> {
                 removeOverlay()
                 showFloatingButton()
@@ -829,6 +823,21 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         } else if (!isAnnotationModeActive) {
             showFloatingButton()
         }
+    }
+
+    private fun handleStylusScreenshot() {
+        toolbarVisibleState.value = false
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (GestureForwardingAccessibilityService.takeSystemScreenshot()) {
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                    { toolbarVisibleState.value = true },
+                    600L
+                )
+            } else {
+                toolbarVisibleState.value = true
+                handleScreenshot()
+            }
+        }, 100L)
     }
 
     /**

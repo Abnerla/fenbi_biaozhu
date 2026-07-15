@@ -2,12 +2,18 @@ package com.example.annotation.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Base64
 import androidx.compose.ui.graphics.Color
 import com.example.annotation.model.StylusButtonAction
 import com.example.annotation.model.StylusButtonMasks
 import com.example.annotation.model.StylusButtonMappings
+import com.example.annotation.model.StylusButton
+import com.example.annotation.model.StylusDeviceIdentity
+import com.example.annotation.model.StylusLearnedBindings
 import com.example.annotation.model.StylusMode
 import com.example.annotation.model.StylusProfile
+import com.example.annotation.model.StylusVendorPreset
+import com.example.annotation.model.StylusVendorPresetCatalog
 import com.example.annotation.model.migrateLegacyStylusProfile
 import com.example.annotation.model.resolveStylusButtonMasks
 
@@ -48,8 +54,10 @@ class PreferencesManager(context: Context) {
         private const val KEY_STYLUS_PROFILE = "stylus_profile"
         private const val KEY_STYLUS_MODE = "stylus_mode"
         private const val KEY_STYLUS_MANUAL_PROFILE = "stylus_manual_profile"
+        private const val KEY_STYLUS_MANUAL_PRESET = "stylus_manual_preset"
         private const val KEY_STYLUS_CUSTOM_PRIMARY_MASK = "stylus_custom_primary_mask"
         private const val KEY_STYLUS_CUSTOM_SECONDARY_MASK = "stylus_custom_secondary_mask"
+        private const val KEY_STYLUS_LEARNED_PREFIX = "stylus_learned_"
         const val STYLUS_PRIMARY_SINGLE = "stylus_primary_single"
         const val STYLUS_PRIMARY_DOUBLE = "stylus_primary_double"
         const val STYLUS_PRIMARY_LONG = "stylus_primary_long"
@@ -196,7 +204,25 @@ class PreferencesManager(context: Context) {
     }
 
     fun setManualStylusProfile(profile: StylusProfile) {
-        prefs.edit().putString(KEY_STYLUS_MANUAL_PROFILE, profile.name).apply()
+        prefs.edit()
+            .putString(KEY_STYLUS_MANUAL_PROFILE, profile.name)
+            .remove(KEY_STYLUS_MANUAL_PRESET)
+            .apply()
+    }
+
+    fun getManualStylusPresetId(): String? = prefs.getString(KEY_STYLUS_MANUAL_PRESET, null)
+
+    fun setManualStylusPresetId(presetId: String?) {
+        prefs.edit().apply {
+            if (presetId == null) remove(KEY_STYLUS_MANUAL_PRESET)
+            else putString(KEY_STYLUS_MANUAL_PRESET, presetId)
+        }.apply()
+    }
+
+    fun resolveStylusPreset(identity: StylusDeviceIdentity?): StylusVendorPreset? = when (getStylusMode()) {
+        StylusMode.AUTO -> identity?.let(StylusVendorPresetCatalog::detect)
+        StylusMode.MANUAL -> StylusVendorPresetCatalog.byId(getManualStylusPresetId())
+        StylusMode.CUSTOM -> null
     }
 
     fun getStylusButtonMasks(): StylusButtonMasks {
@@ -230,17 +256,55 @@ class PreferencesManager(context: Context) {
     }
 
     fun getStylusButtonMappings(): StylusButtonMappings = StylusButtonMappings(
-        primarySingle = stylusAction(STYLUS_PRIMARY_SINGLE, StylusButtonAction.ERASER),
-        primaryDouble = stylusAction(STYLUS_PRIMARY_DOUBLE, StylusButtonAction.UNDO),
-        primaryLong = stylusAction(STYLUS_PRIMARY_LONG, StylusButtonAction.REDO),
-        secondarySingle = stylusAction(STYLUS_SECONDARY_SINGLE, StylusButtonAction.PEN),
-        secondaryDouble = stylusAction(STYLUS_SECONDARY_DOUBLE, StylusButtonAction.HIGHLIGHTER),
-        secondaryLong = stylusAction(STYLUS_SECONDARY_LONG, StylusButtonAction.SCREENSHOT)
+        primarySingle = stylusAction(STYLUS_PRIMARY_SINGLE, StylusButtonAction.VENDOR_DEFAULT),
+        primaryDouble = stylusAction(STYLUS_PRIMARY_DOUBLE, StylusButtonAction.VENDOR_DEFAULT),
+        primaryLong = stylusAction(STYLUS_PRIMARY_LONG, StylusButtonAction.VENDOR_DEFAULT),
+        secondarySingle = stylusAction(STYLUS_SECONDARY_SINGLE, StylusButtonAction.VENDOR_DEFAULT),
+        secondaryDouble = stylusAction(STYLUS_SECONDARY_DOUBLE, StylusButtonAction.VENDOR_DEFAULT),
+        secondaryLong = stylusAction(STYLUS_SECONDARY_LONG, StylusButtonAction.VENDOR_DEFAULT)
     )
 
     fun setStylusButtonAction(key: String, action: StylusButtonAction) {
         require(key in stylusActionKeys) { "Unknown stylus action key: $key" }
         prefs.edit().putString(key, action.name).apply()
+    }
+
+    fun resetStylusButtonMappings() {
+        prefs.edit().apply {
+            stylusActionKeys.forEach(::remove)
+        }.apply()
+    }
+
+    fun getStylusLearnedBindings(deviceKey: String): StylusLearnedBindings {
+        val prefix = learnedDevicePrefix(deviceKey)
+        return StylusLearnedBindings(
+            primaryMask = prefs.getInt("${prefix}primary_mask", 0),
+            secondaryMask = prefs.getInt("${prefix}secondary_mask", 0),
+            primaryKeyCode = prefs.getInt("${prefix}primary_key", 0),
+            secondaryKeyCode = prefs.getInt("${prefix}secondary_key", 0)
+        )
+    }
+
+    fun setStylusLearnedMotionMask(deviceKey: String, button: StylusButton, mask: Int) {
+        if (mask == 0) return
+        val suffix = if (button == StylusButton.PRIMARY) "primary_mask" else "secondary_mask"
+        prefs.edit().putInt(learnedDevicePrefix(deviceKey) + suffix, mask).apply()
+    }
+
+    fun setStylusLearnedKeyCode(deviceKey: String, button: StylusButton, keyCode: Int) {
+        if (keyCode == 0) return
+        val suffix = if (button == StylusButton.PRIMARY) "primary_key" else "secondary_key"
+        prefs.edit().putInt(learnedDevicePrefix(deviceKey) + suffix, keyCode).apply()
+    }
+
+    fun clearStylusLearnedBindings(deviceKey: String) {
+        val prefix = learnedDevicePrefix(deviceKey)
+        prefs.edit()
+            .remove("${prefix}primary_mask")
+            .remove("${prefix}secondary_mask")
+            .remove("${prefix}primary_key")
+            .remove("${prefix}secondary_key")
+            .apply()
     }
 
     fun getTwoFingerTapUndoEnabled(): Boolean = prefs.getBoolean(KEY_GESTURE_TWO_FINGER_UNDO, true)
@@ -263,6 +327,14 @@ class PreferencesManager(context: Context) {
 
     private fun stylusAction(key: String, default: StylusButtonAction): StylusButtonAction {
         return enumPreference(key, default)
+    }
+
+    private fun learnedDevicePrefix(deviceKey: String): String {
+        val encoded = Base64.encodeToString(
+            deviceKey.toByteArray(Charsets.UTF_8),
+            Base64.NO_WRAP or Base64.URL_SAFE
+        )
+        return KEY_STYLUS_LEARNED_PREFIX + encoded + "_"
     }
 
     private fun migrateLegacyStylusSettingsIfNeeded() {

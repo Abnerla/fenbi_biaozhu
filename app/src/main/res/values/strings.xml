@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">粉笔标注</string>
-    <string name="gesture_accessibility_description">将批注画布上的双指滑动转发给底层页面，仅在用户开启对应手势时使用。</string>
+    <string name="gesture_accessibility_description">转发用户启用的双指滑动，并在批注模式中识别用户学习或接管的手写笔按键。</string>
 </resources>

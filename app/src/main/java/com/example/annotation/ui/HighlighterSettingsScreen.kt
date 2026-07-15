@@ -127,7 +127,7 @@ fun HighlighterSettingsScreen(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
-                            text = "笔设置",
+                            text = "荧光笔设置",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )

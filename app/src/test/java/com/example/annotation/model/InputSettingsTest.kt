@@ -63,7 +63,7 @@ class InputSettingsTest {
         val custom = StylusButtonMasks(123, 456)
 
         assertEquals(
-            StylusButtonMasks(MotionEvent.BUTTON_STYLUS_PRIMARY, MotionEvent.BUTTON_SECONDARY),
+            StylusButtonMasks(MotionEvent.BUTTON_STYLUS_PRIMARY, MotionEvent.BUTTON_STYLUS_SECONDARY),
             resolveStylusButtonMasks(
                 StylusMode.AUTO,
                 StylusProfile.XIAOMI,
@@ -89,5 +89,35 @@ class InputSettingsTest {
                 custom
             )
         )
+    }
+
+    @Test
+    fun vendorDefaultsDoNotOwnButtonsUntilUserOverridesOneGesture() {
+        val defaults = StylusButtonMappings()
+        assertFalse(defaults.owns(StylusButton.PRIMARY))
+        assertFalse(defaults.owns(StylusButton.SECONDARY))
+
+        val overridden = defaults.copy(secondaryLong = StylusButtonAction.SCREENSHOT)
+        assertTrue(overridden.owns(StylusButton.SECONDARY))
+        assertTrue(overridden.isMixed(StylusButton.SECONDARY))
+        assertFalse(overridden.owns(StylusButton.PRIMARY))
+    }
+
+    @Test
+    fun vendorPresetMatchingIsModelSpecific() {
+        val focusPen = StylusDeviceIdentity(
+            manufacturer = "Xiaomi",
+            name = "Xiaomi Focus Pen",
+            descriptor = "focus",
+            vendorId = 1,
+            productId = 2
+        )
+        val unknownRedmiPen = focusPen.copy(name = "Generic Pen", descriptor = "generic")
+
+        assertEquals(
+            "xiaomi_focus_pen",
+            StylusVendorPresetCatalog.detect(focusPen)?.id
+        )
+        assertEquals(null, StylusVendorPresetCatalog.detect(unknownRedmiPen))
     }
 }

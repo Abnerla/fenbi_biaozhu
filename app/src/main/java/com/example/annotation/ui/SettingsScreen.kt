@@ -105,7 +105,7 @@ fun SettingsScreen(
             GroupedSettingsCard {
                 SettingEntryRow("工具栏设置", "调整工具栏的属性", Icons.Outlined.Build, onNavigateToToolbarSettings)
                 SettingsInsetDivider()
-                SettingEntryRow("笔设置", "调整笔的细节", Icons.Outlined.Edit, onNavigateToHighlighterSettings)
+                SettingEntryRow("荧光笔设置", "调整荧光笔的细节", Icons.Outlined.Edit, onNavigateToHighlighterSettings)
                 SettingsInsetDivider()
                 SettingEntryRow("手写笔", "品牌兼容与按键功能", Icons.Outlined.Create, onNavigateToStylusSettings)
                 SettingsInsetDivider()
@@ -113,7 +113,7 @@ fun SettingsScreen(
                 SettingsInsetDivider()
                 SettingEntryRow("系统权限", "管理应用所需权限", Icons.Outlined.Lock, onNavigateToPermissions)
                 SettingsInsetDivider()
-                SettingEntryRow("其他", "其他杂项设置", Icons.Outlined.Settings, onNavigateToOtherSettings)
+                SettingEntryRow("其他", "杂项设置", Icons.Outlined.Settings, onNavigateToOtherSettings)
             }
 
             // 关于与帮助分组
