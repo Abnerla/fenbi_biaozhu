@@ -251,7 +251,7 @@ fun HighlighterSettingsScreen(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "长按拖动调整",
+                            text = "长按拖动 · 自定义最多3个",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -342,7 +342,7 @@ fun HighlighterSettingsScreen(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "长按拖动调整",
+                            text = "长按拖动 · 自定义最多3个",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -379,31 +379,6 @@ fun HighlighterSettingsScreen(
                 }
             }
 
-            // 提示信息
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "💡",
-                        fontSize = 20.sp
-                    )
-                    Text(
-                        text = "设置将实时生效，自定义颜色最多3个",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
 
         // 颜色选择器对话框

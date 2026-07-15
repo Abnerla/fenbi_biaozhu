@@ -137,6 +137,16 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_DATA = "data"
         const val EXTRA_CAPTURE_AFTER_PERMISSION = "captureAfterPermission"
+        const val ACTION_SET_ANNOTATION_MODE = "com.example.annotation.action.SET_ANNOTATION_MODE"
+        const val EXTRA_ANNOTATION_ENABLED = "annotationEnabled"
+
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
+        @Volatile
+        var isAnnotationModeActive: Boolean = false
+            private set
 
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
@@ -151,10 +161,23 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             val intent = Intent(context, OverlayService::class.java)
             context.stopService(intent)
         }
+
+        fun setAnnotationMode(context: Context, enabled: Boolean) {
+            val intent = Intent(context, OverlayService::class.java).apply {
+                action = ACTION_SET_ANNOTATION_MODE
+                putExtra(EXTRA_ANNOTATION_ENABLED, enabled)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
 
         // 初始化 PreferencesManager
         preferencesManager = PreferencesManager(this)
@@ -247,6 +270,16 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             return START_NOT_STICKY
         }
 
+        if (intent?.action == ACTION_SET_ANNOTATION_MODE) {
+            if (intent.getBooleanExtra(EXTRA_ANNOTATION_ENABLED, false)) {
+                showOverlay()
+            } else {
+                removeOverlay()
+                showFloatingButton()
+            }
+            return START_STICKY
+        }
+
         showFloatingButton()
 
         // 处理屏幕捕获权限设置
@@ -297,6 +330,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
     override fun onDestroy() {
         super.onDestroy()
+        isRunning = false
+        isAnnotationModeActive = false
 
         // 注销设置变更监听器
         val prefs = getSharedPreferences("annotation_preferences", Context.MODE_PRIVATE)
@@ -681,9 +716,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         try {
             windowManager.addView(overlayView, params)
+            isAnnotationModeActive = true
         } catch (e: Exception) {
             android.util.Log.e("OverlayService", "添加标注悬浮层失败", e)
             overlayView = null
+            isAnnotationModeActive = false
             showFloatingButton()
         }
     }
@@ -700,6 +737,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             }
             overlayView = null
         }
+        isAnnotationModeActive = false
     }
 
     /**

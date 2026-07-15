@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +33,12 @@ fun OtherSettingsScreen(
 ) {
     var showUserEntry by remember {
         mutableStateOf(preferencesManager.getShowUserEntry())
+    }
+    var allowExternalAnnotationControl by remember {
+        mutableStateOf(preferencesManager.getAllowExternalAnnotationControl())
+    }
+    var allowExternalFloatingWindowControl by remember {
+        mutableStateOf(preferencesManager.getAllowExternalFloatingWindowControl())
     }
 
     // 处理返回手势
@@ -141,7 +147,7 @@ fun OtherSettingsScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "首页右上角的用户按钮",
+                                text = "控制首页右上角的用户入口是否显示",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -159,31 +165,96 @@ fun OtherSettingsScreen(
                 }
             }
 
-            // 提示信息
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            Text(
+                text = "跨应用联动",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
+
+            GroupedSettingsCard {
+                ExternalControlSettingRow(
+                    icon = Icons.Outlined.Edit,
+                    title = "允许外部控制批注模式",
+                    description = "默认关闭；开启后第三方应用可切换批注界面",
+                    checked = allowExternalAnnotationControl,
+                    onCheckedChange = { enabled ->
+                        allowExternalAnnotationControl = enabled
+                        preferencesManager.setAllowExternalAnnotationControl(enabled)
+                    }
                 )
+                SettingsInsetDivider()
+                ExternalControlSettingRow(
+                    icon = Icons.Outlined.Settings,
+                    title = "允许外部控制悬浮窗",
+                    description = "默认关闭；开启后第三方应用可启停悬浮窗",
+                    checked = allowExternalFloatingWindowControl,
+                    onCheckedChange = { enabled ->
+                        allowExternalFloatingWindowControl = enabled
+                        preferencesManager.setAllowExternalFloatingWindowControl(enabled)
+                    }
+                )
+            }
+
+        }
+    }
+}
+
+@Composable
+private fun ExternalControlSettingRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "💡",
-                        fontSize = 20.sp
-                    )
-                    Text(
-                        text = "关闭后，首页右上角的用户按钮将不再显示",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = iosSwitchColors()
+        )
     }
 }

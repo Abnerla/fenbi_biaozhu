@@ -34,6 +34,9 @@ class PreferencesManager(context: Context) {
 
         private const val KEY_THEME_MODE = "theme_mode"
 
+        private const val KEY_ALLOW_EXTERNAL_ANNOTATION_CONTROL = "allow_external_annotation_control"
+        private const val KEY_ALLOW_EXTERNAL_FLOATING_WINDOW_CONTROL = "allow_external_floating_window_control"
+
         // 自定义画笔颜色键
         private const val KEY_CUSTOM_PEN_COLOR_1 = "custom_pen_color_1"
         private const val KEY_CUSTOM_PEN_COLOR_2 = "custom_pen_color_2"
@@ -121,6 +124,22 @@ class PreferencesManager(context: Context) {
 
     fun setThemeMode(mode: AppThemeMode) {
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+    }
+
+    fun getAllowExternalAnnotationControl(): Boolean {
+        return prefs.getBoolean(KEY_ALLOW_EXTERNAL_ANNOTATION_CONTROL, false)
+    }
+
+    fun setAllowExternalAnnotationControl(allow: Boolean) {
+        prefs.edit().putBoolean(KEY_ALLOW_EXTERNAL_ANNOTATION_CONTROL, allow).apply()
+    }
+
+    fun getAllowExternalFloatingWindowControl(): Boolean {
+        return prefs.getBoolean(KEY_ALLOW_EXTERNAL_FLOATING_WINDOW_CONTROL, false)
+    }
+
+    fun setAllowExternalFloatingWindowControl(allow: Boolean) {
+        prefs.edit().putBoolean(KEY_ALLOW_EXTERNAL_FLOATING_WINDOW_CONTROL, allow).apply()
     }
 
     /**

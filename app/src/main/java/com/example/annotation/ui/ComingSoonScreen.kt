@@ -114,7 +114,7 @@ fun ComingSoonScreen(
                         )
 
                         Text(
-                            text = "目前还正在构思和开发中！\n请稍等下一个大版本更新\n\n如果你不想看见这个入口，\n可以在 设置 - 其他 里面进行关闭",
+                            text = "目前还正在构思和开发中！\n请稍等下一个大版本更新",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
