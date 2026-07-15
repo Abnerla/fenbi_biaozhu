@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import com.example.annotation.model.UpdateCheckResult
-import com.example.annotation.model.VersionInfo
+import com.example.annotation.model.compareAppVersion
 import com.example.annotation.network.UpdateService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -77,48 +77,11 @@ class UpdateManager(private val context: Context) {
             // 获取当前版本号
             val currentVersionCode = getCurrentVersionCode()
 
-            // 判断是否需要更新
-            when {
-                // 当前版本低于最低支持版本，强制更新
-                currentVersionCode < versionInfo.minSupportVersion -> {
-                    UpdateCheckResult.HasUpdate(
-                        versionInfo = versionInfo,
-                        isForceUpdate = true
-                    )
-                }
-                // 有新版本且设置了强制更新
-                currentVersionCode < versionInfo.latestVersionCode && versionInfo.forceUpdate -> {
-                    UpdateCheckResult.HasUpdate(
-                        versionInfo = versionInfo,
-                        isForceUpdate = true
-                    )
-                }
-                // 有新版本但不强制更新
-                currentVersionCode < versionInfo.latestVersionCode -> {
-                    UpdateCheckResult.HasUpdate(
-                        versionInfo = versionInfo,
-                        isForceUpdate = false
-                    )
-                }
-                // 已是最新版本
-                else -> {
-                    UpdateCheckResult.NoUpdate
-                }
-            }
+            compareAppVersion(currentVersionCode, versionInfo)
         } catch (e: Exception) {
             e.printStackTrace()
             UpdateCheckResult.Error("检查更新失败: ${e.message}")
         }
     }
 
-    /**
-     * 比较版本号
-     * @return true 如果服务器版本更新
-     */
-    private fun isServerVersionNewer(
-        currentVersion: Int,
-        serverVersion: Int
-    ): Boolean {
-        return serverVersion > currentVersion
-    }
 }

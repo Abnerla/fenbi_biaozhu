@@ -1,0 +1,8 @@
+{
+  "latestVersionCode": 10,
+  "latestVersionName": "1.4.0",
+  "updateDesc": "1. 新增手写笔笔尖压感，画笔、荧光笔和橡皮擦可随压力改变尺寸\n2. 完善手写笔主键、副键的测试、学习与自定义动作\n3. 优化手写笔按键桥接、绘制流畅度和输入兼容性",
+  "downloadUrl": "https://github.com/Abnerla/fenbi_biaozhu/releases/download/v1.4.0/app-release.apk",
+  "forceUpdate": false,
+  "minSupportVersion": 1
+}

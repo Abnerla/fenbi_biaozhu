@@ -23,7 +23,14 @@ data class VersionInfo(
 
     @SerializedName("minSupportVersion")
     val minSupportVersion: Int           // 最低支持版本（低于此版本强制更新）
-)
+) {
+    fun isValid(): Boolean =
+        latestVersionCode > 0 &&
+            latestVersionName.isNotBlank() &&
+            updateDesc.isNotBlank() &&
+            downloadUrl.startsWith("https://") &&
+            minSupportVersion in 0..latestVersionCode
+}
 
 /**
  * 版本检查结果
@@ -36,4 +43,19 @@ sealed class UpdateCheckResult {
 
     object NoUpdate : UpdateCheckResult()
     data class Error(val message: String) : UpdateCheckResult()
+}
+
+fun compareAppVersion(
+    currentVersionCode: Int,
+    versionInfo: VersionInfo
+): UpdateCheckResult {
+    if (currentVersionCode >= versionInfo.latestVersionCode) {
+        return UpdateCheckResult.NoUpdate
+    }
+
+    return UpdateCheckResult.HasUpdate(
+        versionInfo = versionInfo,
+        isForceUpdate = versionInfo.forceUpdate ||
+            currentVersionCode < versionInfo.minSupportVersion
+    )
 }

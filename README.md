@@ -2,8 +2,6 @@
 
 粉笔标注是一款 Android 全局屏幕批注工具，可在其他应用上方显示画笔、荧光笔、橡皮擦和截图工具。项目使用 Kotlin、Jetpack Compose、前台服务和 `TYPE_APPLICATION_OVERLAY` 实现。
 
-当前版本：`1.3.3`
-
 最低系统版本：Android 9（API 28）
 
 ## 主要功能
@@ -34,6 +32,17 @@ Windows：
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
+
+## 发布更新
+
+应用从仓库根目录的 [`version.json`](version.json) 检查更新，并使用 `latestVersionCode` 与安装包的 `versionCode` 比较。发布新版本时：
+
+1. 同时递增 `app/build.gradle.kts` 和 `version.json` 中的版本号，两个 `versionCode` 必须一致。
+2. 构建并签名 Release APK，确保它与用户已安装版本使用相同签名。
+3. 在 GitHub 创建与清单一致的 Release 标签，例如 `v1.4.0`。
+4. 将签名后的 APK 作为 `app-release.apk` 上传，再提交更新后的 `version.json`。
+
+`forceUpdate` 为 `true` 时所有旧版本强制更新；安装版本低于 `minSupportVersion` 时也会强制更新。普通更新应保持 `forceUpdate: false`，并将 `minSupportVersion` 设为仍可继续使用的最早 `versionCode`。
 
 ## 使用准备
 

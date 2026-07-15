@@ -33,21 +33,24 @@ class UpdateService {
     suspend fun fetchVersionInfo(): VersionInfo? = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder()
-                .url(VERSION_JSON_URL)
+                .url("$VERSION_JSON_URL?t=${System.currentTimeMillis()}")
+                .header("Accept", "application/json")
+                .header("Cache-Control", "no-cache")
                 .get()
                 .build()
 
-            val response = client.newCall(request).execute()
-
-            if (response.isSuccessful) {
-                val jsonString = response.body?.string()
-                if (!jsonString.isNullOrEmpty()) {
-                    gson.fromJson(jsonString, VersionInfo::class.java)
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val jsonString = response.body?.string()
+                    if (!jsonString.isNullOrBlank()) {
+                        gson.fromJson(jsonString, VersionInfo::class.java)
+                            ?.takeIf(VersionInfo::isValid)
+                    } else {
+                        null
+                    }
                 } else {
                     null
                 }
-            } else {
-                null
             }
         } catch (e: Exception) {
             e.printStackTrace()
