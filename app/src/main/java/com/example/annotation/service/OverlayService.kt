@@ -46,7 +46,7 @@ import com.example.annotation.R
 import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.ui.OverlayContent
 import com.example.annotation.ui.theme.AnnotationTheme
-import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
@@ -63,6 +63,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     private val drawingEngine = DrawingEngine()
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var screenCaptureManager: ScreenCaptureManager
+    private val themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
 
     // 工具栏可见性状态 - 用于截图时隐藏UI
     private val toolbarVisibleState = mutableStateOf(true)
@@ -79,6 +80,9 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                 // 自动折叠设置变更
                 val autoCollapse = preferencesManager.getAutoCollapseToolbar()
                 drawingEngine.setAutoCollapseToolbar(autoCollapse)
+            }
+            "theme_mode" -> {
+                themeModeState.value = preferencesManager.getThemeMode()
             }
         }
     }
@@ -148,6 +152,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // 初始化 PreferencesManager
         preferencesManager = PreferencesManager(this)
+        themeModeState.value = preferencesManager.getThemeMode()
 
         // 获取ScreenCaptureManager单例实例
         screenCaptureManager = ScreenCaptureManager.getInstance(this)
@@ -476,7 +481,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
 
             setContent {
-                AnnotationTheme {
+                AnnotationTheme(themeMode = themeModeState.value) {
                     DraggableFloatingButton(
                         onClick = { showOverlay() },
                         onDrag = { deltaX, deltaY ->
@@ -629,7 +634,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
 
             setContent {
-                AnnotationTheme {
+                AnnotationTheme(themeMode = themeModeState.value) {
                     // 读取工具栏可见性状态
                     val toolbarVisible by toolbarVisibleState
 
@@ -849,7 +854,7 @@ private fun DraggableFloatingButton(
                     onClick()
                 }
             },
-            containerColor = IOSBlue,
+            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
             contentColor = androidx.compose.ui.graphics.Color.White,
             modifier = Modifier.size(40.dp)
         ) {
@@ -865,7 +870,7 @@ private fun DraggableFloatingButton(
 private fun FloatingButtonContent(onClick: () -> Unit) {
     androidx.compose.material3.FloatingActionButton(
         onClick = onClick,
-        containerColor = IOSBlue,
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
         contentColor = androidx.compose.ui.graphics.Color.White,
         modifier = Modifier.size(40.dp)
     ) {

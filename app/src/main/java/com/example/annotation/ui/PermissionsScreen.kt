@@ -4,12 +4,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
@@ -105,51 +103,25 @@ fun PermissionsScreen(
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
 
-            // 屏幕捕获权限
-            PermissionDetailCard(
-                icon = Icons.Outlined.Info,
-                title = "屏幕捕获权限",
-                description = "允许应用在截图时捕获屏幕实际显示的内容（包括视频、浏览器等），与标注内容合成保存",
-                isGranted = permissionStatus.hasScreenCapture,
-                onRequest = onRequestScreenCapturePermission
-            )
+            GroupedSettingsCard {
+                PermissionDetailCard(Icons.Outlined.Info, "屏幕捕获权限", "允许应用在截图时捕获屏幕实际显示的内容（包括视频、浏览器等），与标注内容合成保存", permissionStatus.hasScreenCapture, onRequestScreenCapturePermission)
+                SettingsInsetDivider()
+                PermissionDetailCard(Icons.Outlined.Star, "悬浮窗权限", "允许应用在其他应用上层显示悬浮按钮和工具栏，这是核心功能必需的权限", permissionStatus.hasOverlay, onRequestOverlayPermission)
+                SettingsInsetDivider()
+                PermissionDetailCard(Icons.Outlined.Notifications, "通知权限", "保持服务在后台持续运行，确保悬浮按钮不会被系统回收", permissionStatus.hasNotification, onRequestNotificationPermission)
+                SettingsInsetDivider()
+                PermissionDetailCard(Icons.Outlined.Build, "存储权限", "允许应用将标注后的截图保存到设备相册中", permissionStatus.hasStorage, onRequestStoragePermission)
 
-            // 悬浮窗权限
-            PermissionDetailCard(
-                icon = Icons.Outlined.Star,
-                title = "悬浮窗权限",
-                description = "允许应用在其他应用上层显示悬浮按钮和工具栏，这是核心功能必需的权限",
-                isGranted = permissionStatus.hasOverlay,
-                onRequest = onRequestOverlayPermission
-            )
-
-            // 通知权限
-            PermissionDetailCard(
-                icon = Icons.Outlined.Notifications,
-                title = "通知权限",
-                description = "保持服务在后台持续运行，确保悬浮按钮不会被系统回收",
-                isGranted = permissionStatus.hasNotification,
-                onRequest = onRequestNotificationPermission
-            )
-
-            // 存储权限
-            PermissionDetailCard(
-                icon = Icons.Outlined.Build,
-                title = "存储权限",
-                description = "允许应用将标注后的截图保存到设备相册中",
-                isGranted = permissionStatus.hasStorage,
-                onRequest = onRequestStoragePermission
-            )
-
-            // 前台服务权限 (Android 14+)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                PermissionDetailCard(
-                    icon = Icons.Outlined.DateRange,
-                    title = "前台服务权限",
-                    description = "允许应用在前台运行媒体投影服务，这是Android 14+系统要求的权限",
-                    isGranted = permissionStatus.hasForegroundServiceMediaProjection,
-                    onRequest = onRequestForegroundServicePermission
-                )
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    SettingsInsetDivider()
+                    PermissionDetailCard(
+                        icon = Icons.Outlined.DateRange,
+                        title = "前台服务权限",
+                        description = "允许应用在前台运行媒体投影服务，这是Android 14+系统要求的权限",
+                        isGranted = permissionStatus.hasForegroundServiceMediaProjection,
+                        onRequest = onRequestForegroundServicePermission
+                    )
+                }
             }
 
             // 提示信息
@@ -190,8 +162,10 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
     val allGranted = permissionStatus.isAllGranted()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (allGranted)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -202,13 +176,13 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(
                         if (allGranted)
@@ -222,7 +196,7 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
                     imageVector = if (allGranted) Icons.Outlined.Check else Icons.Outlined.Warning,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
@@ -258,26 +232,20 @@ private fun PermissionDetailCard(
     isGranted: Boolean,
     onRequest: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(
                             if (isGranted)
@@ -294,7 +262,7 @@ private fun PermissionDetailCard(
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -329,7 +297,7 @@ private fun PermissionDetailCard(
                         imageVector = Icons.Outlined.CheckCircle,
                         contentDescription = "已授权",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

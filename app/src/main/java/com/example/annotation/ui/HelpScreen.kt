@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,33 +99,35 @@ fun HelpScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
+            GroupedSettingsCard {
             QuickStartCard(
                 step = "1",
                 title = "授予权限",
                 description = "首次使用需要授予悬浮窗、通知和存储权限",
                 icon = Icons.Outlined.Lock
             )
-
+            SettingsInsetDivider()
             QuickStartCard(
                 step = "2",
                 title = "启动服务",
                 description = "在主页面开启标注服务，屏幕上会显示悬浮按钮",
                 icon = Icons.Outlined.PlayArrow
             )
-
+            SettingsInsetDivider()
             QuickStartCard(
                 step = "3",
                 title = "开始标注",
                 description = "点击悬浮按钮展开工具栏，选择画笔或荧光笔开始标注",
                 icon = Icons.Outlined.Create
             )
-
+            SettingsInsetDivider()
             QuickStartCard(
                 step = "4",
                 title = "保存截图",
                 description = "标注完成后点击截图按钮，图片将保存到相册",
                 icon = Icons.Outlined.Star
             )
+            }
 
             // 常见问题
             Spacer(modifier = Modifier.height(8.dp))
@@ -137,39 +138,42 @@ fun HelpScreen(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
+            GroupedSettingsCard {
             FAQItem(
                 question = "软件要收费吗？",
                 answer = "软件永远不会考虑收费的问题，因为软件本就属于本地运行，不会对作者产生任何负担！"
             )
+            SettingsInsetDivider()
             FAQItem(
                 question = "为什么悬浮按钮不显示？",
                 answer = "请确保已授予悬浮窗权限并在主页面开启了标注服务。如果仍然不显示，请尝试重启应用。"
             )
-
+            SettingsInsetDivider()
             FAQItem(
                 question = "如何调整画笔粗细和颜色？",
                 answer = "点击悬浮按钮展开工具栏后，选择画笔工具，会显示二级菜单包含颜色和粗细选项。"
             )
-
+            SettingsInsetDivider()
             FAQItem(
                 question = "标注的内容可以撤销吗？",
                 answer = "可以，工具栏中有撤销按钮，可以撤销上一步操作。也可以使用橡皮擦工具擦除指定内容。"
             )
-
+            SettingsInsetDivider()
             FAQItem(
                 question = "截图保存在哪里？",
                 answer = "截图会自动保存到设备相册中，通常在 Pictures/粉笔标注 文件夹下。"
             )
-
+            SettingsInsetDivider()
             FAQItem(
                 question = "如何完全关闭标注功能？",
                 answer = "在主页面关闭标注服务开关即可。悬浮按钮会立即消失，应用会停止后台运行。"
             )
-
+            SettingsInsetDivider()
             FAQItem(
                 question = "应用会消耗很多电量吗？",
                 answer = "不会。应用在后台运行时几乎不消耗电量，只有在使用标注功能时才会有少量耗电。"
             )
+            }
 
             // 功能说明
             Spacer(modifier = Modifier.height(8.dp))
@@ -181,35 +185,37 @@ fun HelpScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
+            GroupedSettingsCard {
             ToolDescriptionCard(
                 icon = Icons.Outlined.Edit,
                 title = "画笔",
                 description = "自由绘制线条，支持多种颜色和粗细选择"
             )
-
+            SettingsInsetDivider()
             ToolDescriptionCard(
                 icon = Icons.Outlined.Build,
                 title = "荧光笔",
                 description = "半透明标记工具，适合突出重点内容"
             )
-
+            SettingsInsetDivider()
             ToolDescriptionCard(
                 icon = Icons.Outlined.Close,
                 title = "橡皮擦",
                 description = "擦除已绘制的内容，支持调节擦除范围"
             )
-
+            SettingsInsetDivider()
             ToolDescriptionCard(
                 icon = Icons.Outlined.Delete,
                 title = "清空",
                 description = "一键清除画布上的所有标注内容"
             )
-
+            SettingsInsetDivider()
             ToolDescriptionCard(
                 icon = Icons.Outlined.Star,
                 title = "截图",
                 description = "将当前屏幕和标注内容保存为图片"
             )
+            }
         }
     }
 }
@@ -224,23 +230,16 @@ private fun QuickStartCard(
     description: String,
     icon: ImageVector
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
@@ -274,9 +273,8 @@ private fun QuickStartCard(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(24.dp)
             )
-        }
     }
 }
 
@@ -290,20 +288,12 @@ private fun FAQItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            .clickable { expanded = !expanded }
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -339,7 +329,6 @@ private fun FAQItem(
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }
-        }
     }
 }
 
@@ -352,23 +341,16 @@ private fun ToolDescriptionCard(
     title: String,
     description: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(40.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -377,7 +359,7 @@ private fun ToolDescriptionCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -396,6 +378,5 @@ private fun ToolDescriptionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
     }
 }

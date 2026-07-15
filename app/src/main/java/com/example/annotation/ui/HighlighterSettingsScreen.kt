@@ -37,9 +37,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.annotation.model.ColorPresets
 import com.example.annotation.utils.PreferencesManager
-import com.example.annotation.ui.theme.IOSDivider
-import com.example.annotation.ui.theme.IOSRed
-import com.example.annotation.ui.theme.IOSSurface
 import com.example.annotation.ui.theme.iosTextFieldColors
 import com.github.skydoves.colorpicker.compose.AlphaSlider
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
@@ -173,15 +170,17 @@ fun HighlighterSettingsScreen(
         ) {
             // 荧光笔透明度设置
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     HighlighterAlphaSetting(
                         alpha = highlighterAlpha,
@@ -224,15 +223,17 @@ fun HighlighterSettingsScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -313,15 +314,17 @@ fun HighlighterSettingsScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -823,15 +826,15 @@ private fun ColorOrderItem(
                     .align(Alignment.TopEnd)
                     .size(18.dp)
                     .clip(CircleShape)
-                    .background(IOSSurface)
-                    .border(1.dp, IOSDivider, CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                     .clickable(onClick = onDelete),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
                     contentDescription = "删除",
-                    tint = IOSRed,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(12.dp)
                 )
             }

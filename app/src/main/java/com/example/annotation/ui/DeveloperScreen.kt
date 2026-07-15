@@ -8,6 +8,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
@@ -31,8 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
 
 /**
  * 开发人员信息页面
@@ -116,26 +115,28 @@ fun DeveloperScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                DeveloperCard(
-                    name = "主程序员：Abner",
-                    role = "核心开发 & 架构设计",
-                    icon = Icons.Outlined.AccountCircle,
-                    description = "负责应用整体架构设计与核心功能开发"
-                )
-
-                DeveloperCard(
-                    name = "UI/UX设计师：Abner",
-                    role = "界面设计 & 用户体验",
-                    icon = Icons.Outlined.Star,
-                    description = "打造简洁美观的用户界面和流畅的交互体验"
-                )
-
-                DeveloperCard(
-                    name = "测试工程师：Abner",
-                    role = "质量保证 & 性能优化",
-                    icon = Icons.Outlined.Build,
-                    description = "确保应用稳定性和高性能运行"
-                )
+                GroupedSettingsCard {
+                    DeveloperCard(
+                        name = "主程序员：Abner",
+                        role = "核心开发 & 架构设计",
+                        icon = Icons.Outlined.AccountCircle,
+                        description = "负责应用整体架构设计与核心功能开发"
+                    )
+                    SettingsInsetDivider()
+                    DeveloperCard(
+                        name = "UI/UX设计师：Abner",
+                        role = "界面设计 & 用户体验",
+                        icon = Icons.Outlined.Star,
+                        description = "打造简洁美观的用户界面和流畅的交互体验"
+                    )
+                    SettingsInsetDivider()
+                    DeveloperCard(
+                        name = "测试工程师：Abner",
+                        role = "质量保证 & 性能优化",
+                        icon = Icons.Outlined.Build,
+                        description = "确保应用稳定性和高性能运行"
+                    )
+                }
 
                 // 联系方式
                 Spacer(modifier = Modifier.height(16.dp))
@@ -147,44 +148,48 @@ fun DeveloperScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                ContactCard(
-                    icon = Icons.Outlined.Email,
-                    title = "电子邮箱",
-                    content = "1444170707@qq.com",
-                    onClick = {
-                        // 复制邮箱到剪贴板
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("email", "1444170707@qq.com")
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, "邮箱已复制到剪贴板", Toast.LENGTH_SHORT).show()
-                    }
-                )
-
-                ContactCard(
-                    icon = Icons.Outlined.Face,
-                    title = "GitHub",
-                    content = "https://github.com/Abnerla",
-                    onClick = {
-                        // 打开浏览器跳转到 GitHub
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Abnerla"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                GroupedSettingsCard {
+                    ContactCard(
+                        icon = Icons.Outlined.Email,
+                        title = "电子邮箱",
+                        content = "1444170707@qq.com",
+                        onClick = {
+                            // 复制邮箱到剪贴板
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("email", "1444170707@qq.com")
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, "邮箱已复制到剪贴板", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                )
+                    )
+                    SettingsInsetDivider()
+                    ContactCard(
+                        icon = Icons.Outlined.Face,
+                        title = "GitHub",
+                        content = "https://github.com/Abnerla",
+                        onClick = {
+                            // 打开浏览器跳转到 GitHub
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Abnerla"))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                }
 
                 // 致谢
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
@@ -229,13 +234,13 @@ private fun DeveloperHeader() {
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape)
-                .background(IOSBlueSurface),
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Person,
                 contentDescription = null,
-                tint = IOSBlue,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(40.dp)
             )
         }
@@ -264,56 +269,46 @@ private fun DeveloperCard(
     icon: ImageVector,
     description: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = role,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 18.sp
-                )
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = role,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp
+            )
         }
     }
 }
@@ -328,53 +323,44 @@ private fun ContactCard(
     content: String,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = content,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

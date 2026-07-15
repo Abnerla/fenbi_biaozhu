@@ -4,6 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
 
+enum class AppThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK
+}
+
 /**
  * 偏好设置管理器
  */
@@ -25,6 +31,8 @@ class PreferencesManager(context: Context) {
 
         private const val KEY_SHOW_USER_ENTRY = "show_user_entry"
         private const val DEFAULT_SHOW_USER_ENTRY = true
+
+        private const val KEY_THEME_MODE = "theme_mode"
 
         // 自定义画笔颜色键
         private const val KEY_CUSTOM_PEN_COLOR_1 = "custom_pen_color_1"
@@ -103,6 +111,16 @@ class PreferencesManager(context: Context) {
      */
     fun setShowUserEntry(show: Boolean) {
         prefs.edit().putBoolean(KEY_SHOW_USER_ENTRY, show).apply()
+    }
+
+    fun getThemeMode(): AppThemeMode {
+        val savedMode = prefs.getString(KEY_THEME_MODE, AppThemeMode.SYSTEM.name)
+        return runCatching { AppThemeMode.valueOf(savedMode ?: AppThemeMode.SYSTEM.name) }
+            .getOrDefault(AppThemeMode.SYSTEM)
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
     }
 
     /**

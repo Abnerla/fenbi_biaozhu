@@ -28,8 +28,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.annotation.ui.theme.iosSwitchColors
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
 import com.example.annotation.utils.PreferencesManager
 
 /**
@@ -150,7 +148,7 @@ private fun AppHeaderSection(currentVersion: String) {
                 .size(100.dp)
                 .shadow(2.dp, CircleShape)
                 .clip(CircleShape)
-                .background(IOSBlueSurface)
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .border(
                     width = 3.dp,
                     color = MaterialTheme.colorScheme.surface,
@@ -161,7 +159,7 @@ private fun AppHeaderSection(currentVersion: String) {
             Icon(
                 imageVector = Icons.Outlined.Create,
                 contentDescription = "应用图标",
-                tint = IOSBlue,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(50.dp)
             )
         }
@@ -248,29 +246,31 @@ private fun FeatureSection() {
         )
 
         // 功能列表
-        FeatureItem(
-            icon = Icons.Outlined.Create,
-            title = "自由标注",
-            description = "支持画笔、荧光笔、橡皮擦等多种工具"
-        )
-
-        FeatureItem(
-            icon = Icons.Outlined.Favorite,
-            title = "全局悬浮",
-            description = "随时随页调出工具栏，快速开始标注"
-        )
-
-        FeatureItem(
-            icon = Icons.Outlined.Star,
-            title = "一键截图",
-            description = "标注完成后一键保存到相册"
-        )
-
-        FeatureItem(
-            icon = Icons.Outlined.Settings,
-            title = "个性化设置",
-            description = "自定义工具栏和画笔属性"
-        )
+        GroupedSettingsCard {
+            FeatureItem(
+                icon = Icons.Outlined.Create,
+                title = "自由标注",
+                description = "支持画笔、荧光笔、橡皮擦等多种工具"
+            )
+            SettingsInsetDivider()
+            FeatureItem(
+                icon = Icons.Outlined.Favorite,
+                title = "全局悬浮",
+                description = "随时随页调出工具栏，快速开始标注"
+            )
+            SettingsInsetDivider()
+            FeatureItem(
+                icon = Icons.Outlined.Star,
+                title = "一键截图",
+                description = "标注完成后一键保存到相册"
+            )
+            SettingsInsetDivider()
+            FeatureItem(
+                icon = Icons.Outlined.Settings,
+                title = "个性化设置",
+                description = "自定义工具栏和画笔属性"
+            )
+        }
     }
 }
 
@@ -283,53 +283,45 @@ private fun FeatureItem(
     title: String,
     description: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // 图标
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            // 图标
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
 
-            // 文字内容
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        // 文字内容
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

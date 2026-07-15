@@ -33,13 +33,6 @@ import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.ColorPresets
 import com.example.annotation.model.DrawingTool
 import com.example.annotation.model.ToolbarPresets
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
-import com.example.annotation.ui.theme.IOSDivider
-import com.example.annotation.ui.theme.IOSLabel
-import com.example.annotation.ui.theme.IOSRed
-import com.example.annotation.ui.theme.IOSGreen
-import com.example.annotation.ui.theme.IOSSecondaryLabel
 
 /**
  * 工具栏视图 - 一级菜单和二级菜单系统
@@ -103,7 +96,7 @@ fun ToolbarView(
                 Column(
                     modifier = Modifier
                         .background(
-                            color = Color(0xF0FFFFFF),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(6.dp),
@@ -178,7 +171,7 @@ fun ToolbarView(
                 Row(
                     modifier = Modifier
                         .background(
-                            color = Color(0xF0FFFFFF),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(6.dp),
@@ -319,7 +312,7 @@ private fun ToolbarButtons(
                     isSelected = false,
                     onClick = { drawingEngine.clearAll() },
                     description = tool.name,
-                    tint = IOSRed
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
             "screenshot" -> {
@@ -328,7 +321,7 @@ private fun ToolbarButtons(
                     isSelected = false,
                     onClick = onScreenshot,
                     description = tool.name,
-                    tint = IOSGreen
+                    tint = MaterialTheme.colorScheme.tertiary
                 )
             }
             "layout" -> {
@@ -342,7 +335,7 @@ private fun ToolbarButtons(
                     isSelected = false,
                     onClick = onToggleOrientation,
                     description = tool.name,
-                    tint = IOSBlue
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
             "exit" -> {
@@ -389,7 +382,7 @@ private fun SecondaryMenu(
         Column(
             modifier = modifier
                 .background(
-                    color = Color(0xF0FFFFFF),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                     shape = RoundedCornerShape(8.dp)
                 )
                 .padding(6.dp),
@@ -410,7 +403,7 @@ private fun SecondaryMenu(
         Row(
             modifier = modifier
                 .background(
-                    color = Color(0xF0FFFFFF),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                     shape = RoundedCornerShape(8.dp)
                 )
                 .padding(6.dp),
@@ -580,7 +573,10 @@ private fun ColorItem(
             .background(color)
             .border(
                 width = if (color == currentColor) 2.dp else 0.8.dp,
-                color = if (color == currentColor) IOSBlue else IOSDivider,
+                color = if (color == currentColor)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.outline,
                 shape = CircleShape
             )
             .clickable { onColorSelected(color) }
@@ -716,16 +712,17 @@ private fun ToolButtonWithPreview(
     previewColor: Color,
     previewSize: Float,
     showColorPreview: Boolean = true,
-    tint: Color = IOSLabel
+    tint: Color? = null
 ) {
+    val resolvedTint = tint ?: MaterialTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) IOSBlue else Color.Transparent,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -738,7 +735,7 @@ private fun ToolButtonWithPreview(
             Icon(
                 painter = painter,
                 contentDescription = description,
-                tint = if (isSelected) IOSBlue else tint,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else resolvedTint,
                 modifier = Modifier.size(14.dp)
             )
 
@@ -766,16 +763,17 @@ private fun ToolButton(
     isSelected: Boolean,
     onClick: () -> Unit,
     description: String,
-    tint: Color = IOSLabel
+    tint: Color? = null
 ) {
+    val resolvedTint = tint ?: MaterialTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) IOSBlue else Color.Transparent,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -784,7 +782,7 @@ private fun ToolButton(
         Icon(
             imageVector = icon,
             contentDescription = description,
-            tint = if (isSelected) IOSBlue else tint,
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else resolvedTint,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -799,16 +797,17 @@ private fun ToolButtonWithImage(
     isSelected: Boolean,
     onClick: () -> Unit,
     description: String,
-    tint: Color = IOSLabel
+    tint: Color? = null
 ) {
+    val resolvedTint = tint ?: MaterialTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) IOSBlue else Color.Transparent,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -817,7 +816,7 @@ private fun ToolButtonWithImage(
         Icon(
             painter = painter,
             contentDescription = description,
-            tint = if (isSelected) IOSBlue else tint,
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else resolvedTint,
             modifier = Modifier.size(16.dp)
         )
     }

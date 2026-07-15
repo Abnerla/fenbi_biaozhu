@@ -13,6 +13,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
@@ -38,16 +39,15 @@ import com.example.annotation.model.VersionInfo
 import com.example.annotation.service.OverlayService
 import com.example.annotation.ui.*
 import com.example.annotation.ui.theme.AnnotationTheme
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
-import com.example.annotation.ui.theme.IOSGreenSurface
-import com.example.annotation.ui.theme.IOSLabel
-import com.example.annotation.ui.theme.IOSSecondaryLabel
+import com.example.annotation.ui.theme.SystemModeIcon
+import com.example.annotation.ui.theme.LightModeIcon
+import com.example.annotation.ui.theme.DarkModeIcon
 import com.example.annotation.ui.theme.iosSwitchColors
 import com.example.annotation.update.ApkDownloader
 import com.example.annotation.update.UpdateManager
 import com.example.annotation.utils.PermissionHelper
 import com.example.annotation.utils.PreferencesManager
+import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.ScreenCaptureManager
 import kotlinx.coroutines.launch
 import android.app.Activity
@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
 
     // 服务运行状态
     private var isServiceRunning by mutableStateOf(false)
+    private var themeMode by mutableStateOf(AppThemeMode.SYSTEM)
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -155,6 +156,7 @@ class MainActivity : ComponentActivity() {
 
         // 初始化 PreferencesManager
         preferencesManager = PreferencesManager(this)
+        themeMode = preferencesManager.getThemeMode()
 
         // 初始化更新管理器
         updateManager = UpdateManager(this)
@@ -172,7 +174,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            AnnotationTheme {
+            AnnotationTheme(themeMode = themeMode) {
                 val snackbarHostState = remember { SnackbarHostState() }
 
                 // 显示提示消息
@@ -217,6 +219,11 @@ class MainActivity : ComponentActivity() {
                                 permissionStatus = permissionStatus,
                                 isServiceRunning = isServiceRunning,
                                 preferencesManager = preferencesManager,
+                                themeMode = themeMode,
+                                onThemeModeChange = { mode ->
+                                    themeMode = mode
+                                    preferencesManager.setThemeMode(mode)
+                                },
                                 onRequestOverlayPermission = {
                                     PermissionHelper.requestOverlayPermission(this)
                                 },
@@ -540,6 +547,8 @@ fun MainScreen(
     permissionStatus: com.example.annotation.utils.PermissionStatus,
     isServiceRunning: Boolean,
     preferencesManager: PreferencesManager,
+    themeMode: AppThemeMode,
+    onThemeModeChange: (AppThemeMode) -> Unit,
     onRequestOverlayPermission: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onRequestStoragePermission: () -> Unit,
@@ -551,6 +560,7 @@ fun MainScreen(
     onOpenComingSoon: () -> Unit = {}
 ) {
     val showUserEntry = remember { mutableStateOf(preferencesManager.getShowUserEntry()) }
+    var themeMenuExpanded by remember { mutableStateOf(false) }
 
     // 监听设置变化
     LaunchedEffect(Unit) {
@@ -570,6 +580,52 @@ fun MainScreen(
                     )
                 },
                 actions = {
+                    Box {
+                        IconButton(onClick = { themeMenuExpanded = true }) {
+                            Icon(
+                                imageVector = when (themeMode) {
+                                    AppThemeMode.SYSTEM -> SystemModeIcon
+                                    AppThemeMode.LIGHT -> LightModeIcon
+                                    AppThemeMode.DARK -> DarkModeIcon
+                                },
+                                contentDescription = "外观模式",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = themeMenuExpanded,
+                            onDismissRequest = { themeMenuExpanded = false }
+                        ) {
+                            ThemeModeMenuItem(
+                                label = "跟随系统",
+                                icon = SystemModeIcon,
+                                selected = themeMode == AppThemeMode.SYSTEM,
+                                onClick = {
+                                    onThemeModeChange(AppThemeMode.SYSTEM)
+                                    themeMenuExpanded = false
+                                }
+                            )
+                            ThemeModeMenuItem(
+                                label = "浅色模式",
+                                icon = LightModeIcon,
+                                selected = themeMode == AppThemeMode.LIGHT,
+                                onClick = {
+                                    onThemeModeChange(AppThemeMode.LIGHT)
+                                    themeMenuExpanded = false
+                                }
+                            )
+                            ThemeModeMenuItem(
+                                label = "深色模式",
+                                icon = DarkModeIcon,
+                                selected = themeMode == AppThemeMode.DARK,
+                                onClick = {
+                                    onThemeModeChange(AppThemeMode.DARK)
+                                    themeMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(
                             imageVector = Icons.Outlined.Settings,
@@ -622,7 +678,7 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(IOSBlueSurface)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
                             .padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -634,13 +690,13 @@ fun MainScreen(
                                 imageVector = Icons.Outlined.Create,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = IOSBlue
+                                tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "全局屏幕标注工具",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = IOSLabel,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
@@ -648,7 +704,7 @@ fun MainScreen(
                             Text(
                                 text = "随时随页，自由标注",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = IOSSecondaryLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -661,14 +717,14 @@ fun MainScreen(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (permissionStatus.isAllGranted())
-                            IOSGreenSurface
+                            MaterialTheme.colorScheme.tertiaryContainer
                         else
                             MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -764,6 +820,8 @@ fun MainScreen(
                             )
                         }
 
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         PermissionItemModern(
                             icon = Icons.Outlined.Info,
                             name = "屏幕捕获权限",
@@ -771,6 +829,7 @@ fun MainScreen(
                             isGranted = permissionStatus.hasScreenCapture,
                             onRequest = onRequestScreenCapturePermission
                         )
+                        SettingsInsetDivider()
 
                         PermissionItemModern(
                             icon = Icons.Outlined.Star,
@@ -779,6 +838,7 @@ fun MainScreen(
                             isGranted = permissionStatus.hasOverlay,
                             onRequest = onRequestOverlayPermission
                         )
+                        SettingsInsetDivider()
 
                         PermissionItemModern(
                             icon = Icons.Outlined.Notifications,
@@ -787,6 +847,7 @@ fun MainScreen(
                             isGranted = permissionStatus.hasNotification,
                             onRequest = onRequestNotificationPermission
                         )
+                        SettingsInsetDivider()
 
                         PermissionItemModern(
                             icon = Icons.Outlined.Build,
@@ -798,6 +859,7 @@ fun MainScreen(
 
                         // Only show on Android 14+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            SettingsInsetDivider()
                             PermissionItemModern(
                                 icon = Icons.Outlined.DateRange,
                                 name = "前台服务权限",
@@ -843,6 +905,29 @@ fun MainScreen(
 }
 
 @Composable
+private fun ThemeModeMenuItem(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        onClick = onClick,
+        leadingIcon = { Icon(imageVector = icon, contentDescription = null) },
+        trailingIcon = {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = "已选择",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+}
+
+@Composable
 fun PermissionItemModern(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     name: String,
@@ -851,11 +936,13 @@ fun PermissionItemModern(
     onRequest: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGranted)
-                IOSGreenSurface
+                MaterialTheme.colorScheme.tertiaryContainer
             else
                 MaterialTheme.colorScheme.surface
         )
@@ -863,7 +950,7 @@ fun PermissionItemModern(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -874,7 +961,7 @@ fun PermissionItemModern(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(
                             if (isGranted)
@@ -891,7 +978,7 @@ fun PermissionItemModern(
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -914,15 +1001,15 @@ fun PermissionItemModern(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = "已授权",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             } else {
                 FilledTonalButton(
                     onClick = onRequest,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = IOSBlueSurface,
-                        contentColor = IOSBlue
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text("授权")

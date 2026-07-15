@@ -16,10 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
-import com.example.annotation.ui.theme.IOSLabel
-import com.example.annotation.ui.theme.IOSSecondaryLabel
 
 /**
  * 功能开发中提示页面
@@ -94,7 +90,7 @@ fun ComingSoonScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(IOSBlueSurface)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -106,13 +102,13 @@ fun ComingSoonScreen(
                             imageVector = Icons.Outlined.DateRange,
                             contentDescription = null,
                             modifier = Modifier.size(80.dp),
-                            tint = IOSBlue
+                            tint = MaterialTheme.colorScheme.primary
                         )
 
                         Text(
                             text = "功能开发中",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = IOSLabel,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center
                         )
@@ -120,7 +116,7 @@ fun ComingSoonScreen(
                         Text(
                             text = "目前还正在构思和开发中！\n请稍等下一个大版本更新\n\n如果你不想看见这个入口，\n可以在 设置 - 其他 里面进行关闭",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = IOSSecondaryLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             lineHeight = 28.sp
                         )

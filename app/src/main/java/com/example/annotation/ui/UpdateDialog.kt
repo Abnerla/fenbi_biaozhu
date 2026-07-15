@@ -28,10 +28,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.annotation.model.VersionInfo
-import com.example.annotation.ui.theme.IOSBlue
-import com.example.annotation.ui.theme.IOSBlueSurface
-import com.example.annotation.ui.theme.IOSRed
-import com.example.annotation.ui.theme.IOSRedSurface
 import kotlinx.coroutines.delay
 
 /**
@@ -175,7 +171,10 @@ private fun HeaderSection(isForceUpdate: Boolean) {
             .fillMaxWidth()
             .height(100.dp)
             .background(
-                color = if (isForceUpdate) IOSRedSurface else IOSBlueSurface,
+                color = if (isForceUpdate)
+                    MaterialTheme.colorScheme.errorContainer
+                else
+                    MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ),
         contentAlignment = Alignment.Center
@@ -324,7 +323,10 @@ private fun AnimatedIcon(isForceUpdate: Boolean) {
                     modifier = Modifier
                         .size(28.dp)
                         .rotate(iconRotation),
-                    tint = if (isForceUpdate) IOSRed else IOSBlue
+                    tint = if (isForceUpdate)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -809,7 +811,7 @@ private fun ProgressSection(progress: Int) {
                     .fillMaxWidth(progress / 100f)
                     .fillMaxHeight()
                     .background(
-                        color = IOSBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         shape = RoundedCornerShape(5.dp)
                     )
             )

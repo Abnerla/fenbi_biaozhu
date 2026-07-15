@@ -2,6 +2,7 @@
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
@@ -94,77 +95,33 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding(), start = 16.dp, end = 16.dp, bottom = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // 应用设置分组
             SettingGroupTitle(title = "应用设置")
 
-            // 工具栏设置入口
-            SettingEntryCard(
-                title = "工具栏设置",
-                description = "调整工具栏的属性",
-                icon = Icons.Outlined.Build,
-                onClick = onNavigateToToolbarSettings
-            )
-
-            // 笔设置入口
-            SettingEntryCard(
-                title = "笔设置",
-                description = "调整笔的细节",
-                icon = Icons.Outlined.Edit,
-                onClick = onNavigateToHighlighterSettings
-            )
-
-            // 系统权限管理入口
-            SettingEntryCard(
-                title = "系统权限",
-                description = "管理应用所需权限",
-                icon = Icons.Outlined.Lock,
-                onClick = onNavigateToPermissions
-            )
-
-            // 其他设置入口
-            SettingEntryCard(
-                title = "其他",
-                description = "其他杂项设置",
-                icon = Icons.Outlined.Settings,
-                onClick = onNavigateToOtherSettings
-            )
+            GroupedSettingsCard {
+                SettingEntryRow("工具栏设置", "调整工具栏的属性", Icons.Outlined.Build, onNavigateToToolbarSettings)
+                SettingsInsetDivider()
+                SettingEntryRow("笔设置", "调整笔的细节", Icons.Outlined.Edit, onNavigateToHighlighterSettings)
+                SettingsInsetDivider()
+                SettingEntryRow("系统权限", "管理应用所需权限", Icons.Outlined.Lock, onNavigateToPermissions)
+                SettingsInsetDivider()
+                SettingEntryRow("其他", "其他杂项设置", Icons.Outlined.Settings, onNavigateToOtherSettings)
+            }
 
             // 关于与帮助分组
             SettingGroupTitle(title = "关于与帮助")
 
-            // 版本信息入口
-            SettingEntryCard(
-                title = "版本信息",
-                description = "版本信息与更新",
-                icon = Icons.Outlined.Info,
-                onClick = onNavigateToAbout
-            )
-
-            // 开发人员信息入口
-            SettingEntryCard(
-                title = "开发人员",
-                description = "查看开发团队信息",
-                icon = Icons.Outlined.Person,
-                onClick = onNavigateToDeveloper
-            )
-
-            // 反馈入口
-            SettingEntryCard(
-                title = "反馈",
-                description = "提交问题或建议",
-                icon = Icons.Outlined.Email,
-                onClick = onNavigateToFeedback
-            )
-
-            // 帮助入口
-            SettingEntryCard(
-                title = "帮助",
-                description = "使用指南与常见问题",
-                icon = Icons.Outlined.Home,
-                onClick = onNavigateToHelp
-            )
+            GroupedSettingsCard {
+                SettingEntryRow("版本信息", "版本信息与更新", Icons.Outlined.Info, onNavigateToAbout)
+                SettingsInsetDivider()
+                SettingEntryRow("开发人员", "查看开发团队信息", Icons.Outlined.Person, onNavigateToDeveloper)
+                SettingsInsetDivider()
+                SettingEntryRow("反馈", "提交问题或建议", Icons.Outlined.Email, onNavigateToFeedback)
+                SettingsInsetDivider()
+                SettingEntryRow("帮助", "使用指南与常见问题", Icons.Outlined.Home, onNavigateToHelp)
+            }
         }
     }
 }
@@ -187,36 +144,28 @@ private fun SettingGroupTitle(title: String) {
  * 设置入口卡片组件
  */
 @Composable
-private fun SettingEntryCard(
+private fun SettingEntryRow(
     title: String,
     description: String,
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -225,7 +174,7 @@ private fun SettingEntryCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -243,14 +192,13 @@ private fun SettingEntryCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(28.dp)
-            )
         }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }

@@ -37,10 +37,6 @@ import com.example.annotation.model.ToolbarItem
 import com.example.annotation.model.ToolbarPresets
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.ui.theme.iosSwitchColors
-import com.example.annotation.ui.theme.IOSDivider
-import com.example.annotation.ui.theme.IOSLabel
-import com.example.annotation.ui.theme.IOSSecondaryLabel
-import com.example.annotation.ui.theme.IOSSurfaceSecondary
 
 /**
  * 工具栏设置页面
@@ -153,15 +149,17 @@ fun ToolbarSettingsScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -207,15 +205,17 @@ fun ToolbarSettingsScreen(
 
             // 设置卡片
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // 自动折叠二级功能栏开关
                     AutoCollapseToolbarSetting(
@@ -455,13 +455,16 @@ private fun ToolbarOrderItem(
                     }
                     .clip(CircleShape)
                     .background(
-                        color = if (isVisible) IOSSurfaceSecondary else IOSDivider.copy(alpha = 0.25f)
+                        color = if (isVisible)
+                            MaterialTheme.colorScheme.surfaceVariant
+                        else
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
                     )
                     .border(
                         width = if (isDragged) 3.dp else 1.dp,
                         color = when {
                             isDragged -> MaterialTheme.colorScheme.primary
-                            else -> IOSDivider
+                            else -> MaterialTheme.colorScheme.outline
                         },
                         shape = CircleShape
                     ),
@@ -474,7 +477,10 @@ private fun ToolbarOrderItem(
                             Icon(
                                 imageVector = iconData,
                                 contentDescription = tool.name,
-                                tint = if (isVisible) IOSLabel else IOSSecondaryLabel,
+                                tint = if (isVisible)
+                                    MaterialTheme.colorScheme.onSurface
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -491,7 +497,10 @@ private fun ToolbarOrderItem(
                                 Icon(
                                     painter = painterResource(id = it),
                                     contentDescription = tool.name,
-                                    tint = if (isVisible) IOSLabel else IOSSecondaryLabel,
+                                    tint = if (isVisible)
+                                        MaterialTheme.colorScheme.onSurface
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -503,7 +512,12 @@ private fun ToolbarOrderItem(
                         modifier = Modifier
                             .width(2.dp)
                             .height(24.dp)
-                            .background(if (isVisible) IOSSecondaryLabel else IOSDivider)
+                            .background(
+                                if (isVisible)
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                else
+                                    MaterialTheme.colorScheme.outline
+                            )
                     )
                 }
             }
@@ -516,7 +530,7 @@ private fun ToolbarOrderItem(
                     .clip(CircleShape)
                     .background(
                         if (isVisible) MaterialTheme.colorScheme.primary
-                        else IOSSecondaryLabel.copy(alpha = 0.6f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                     .clickable(onClick = onVisibilityToggle),
                 contentAlignment = Alignment.Center
