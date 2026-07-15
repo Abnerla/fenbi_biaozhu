@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -12,8 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +36,11 @@ import com.example.annotation.R
 import com.example.annotation.model.ToolbarItem
 import com.example.annotation.model.ToolbarPresets
 import com.example.annotation.utils.PreferencesManager
+import com.example.annotation.ui.theme.iosSwitchColors
+import com.example.annotation.ui.theme.IOSDivider
+import com.example.annotation.ui.theme.IOSLabel
+import com.example.annotation.ui.theme.IOSSecondaryLabel
+import com.example.annotation.ui.theme.IOSSurfaceSecondary
 
 /**
  * 工具栏设置页面
@@ -81,7 +86,7 @@ fun ToolbarSettingsScreen(
                     ) {
                         Text(
                             text = "工具栏设置",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -98,7 +103,7 @@ fun ToolbarSettingsScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -131,7 +136,7 @@ fun ToolbarSettingsScreen(
                 Text(
                     text = "工具顺序",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 TextButton(
                     onClick = {
@@ -196,7 +201,7 @@ fun ToolbarSettingsScreen(
             Text(
                 text = "其他设置",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
@@ -450,13 +455,13 @@ private fun ToolbarOrderItem(
                     }
                     .clip(CircleShape)
                     .background(
-                        color = if (isVisible) Color(0xFFF0F0F0) else Color(0xFFE0E0E0).copy(alpha = 0.5f)
+                        color = if (isVisible) IOSSurfaceSecondary else IOSDivider.copy(alpha = 0.25f)
                     )
                     .border(
                         width = if (isDragged) 3.dp else 1.dp,
                         color = when {
                             isDragged -> MaterialTheme.colorScheme.primary
-                            else -> Color.Gray.copy(alpha = 0.3f)
+                            else -> IOSDivider
                         },
                         shape = CircleShape
                     ),
@@ -469,7 +474,7 @@ private fun ToolbarOrderItem(
                             Icon(
                                 imageVector = iconData,
                                 contentDescription = tool.name,
-                                tint = if (isVisible) Color.Black else Color.Gray,
+                                tint = if (isVisible) IOSLabel else IOSSecondaryLabel,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -486,7 +491,7 @@ private fun ToolbarOrderItem(
                                 Icon(
                                     painter = painterResource(id = it),
                                     contentDescription = tool.name,
-                                    tint = if (isVisible) Color.Black else Color.Gray,
+                                    tint = if (isVisible) IOSLabel else IOSSecondaryLabel,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -498,7 +503,7 @@ private fun ToolbarOrderItem(
                         modifier = Modifier
                             .width(2.dp)
                             .height(24.dp)
-                            .background(if (isVisible) Color.Gray else Color.Gray.copy(alpha = 0.3f))
+                            .background(if (isVisible) IOSSecondaryLabel else IOSDivider)
                     )
                 }
             }
@@ -511,13 +516,13 @@ private fun ToolbarOrderItem(
                     .clip(CircleShape)
                     .background(
                         if (isVisible) MaterialTheme.colorScheme.primary
-                        else Color.Gray.copy(alpha = 0.6f)
+                        else IOSSecondaryLabel.copy(alpha = 0.6f)
                     )
                     .clickable(onClick = onVisibilityToggle),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isVisible) Icons.Default.CheckCircle else Icons.Default.Close,
+                    imageVector = if (isVisible) Icons.Outlined.CheckCircle else Icons.Outlined.Close,
                     contentDescription = if (isVisible) "隐藏" else "显示",
                     tint = Color.White,
                     modifier = Modifier.size(14.dp)
@@ -567,7 +572,8 @@ private fun AutoCollapseToolbarSetting(
 
         Switch(
             checked = enabled,
-            onCheckedChange = onEnabledChange
+            onCheckedChange = onEnabledChange,
+            colors = iosSwitchColors()
         )
     }
 }

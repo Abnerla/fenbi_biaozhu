@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -17,8 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.ui.theme.IOSBlueSurface
 
 /**
  * 开发人员信息页面
@@ -58,7 +60,7 @@ fun DeveloperScreen(
                     ) {
                         Text(
                             text = "开发人员",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -75,7 +77,7 @@ fun DeveloperScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -110,28 +112,28 @@ fun DeveloperScreen(
                 Text(
                     text = "开发团队",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 DeveloperCard(
                     name = "主程序员：Abner",
                     role = "核心开发 & 架构设计",
-                    icon = Icons.Default.AccountCircle,
+                    icon = Icons.Outlined.AccountCircle,
                     description = "负责应用整体架构设计与核心功能开发"
                 )
 
                 DeveloperCard(
                     name = "UI/UX设计师：Abner",
                     role = "界面设计 & 用户体验",
-                    icon = Icons.Default.Star,
+                    icon = Icons.Outlined.Star,
                     description = "打造简洁美观的用户界面和流畅的交互体验"
                 )
 
                 DeveloperCard(
                     name = "测试工程师：Abner",
                     role = "质量保证 & 性能优化",
-                    icon = Icons.Default.Build,
+                    icon = Icons.Outlined.Build,
                     description = "确保应用稳定性和高性能运行"
                 )
 
@@ -141,12 +143,12 @@ fun DeveloperScreen(
                 Text(
                     text = "联系我们",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 ContactCard(
-                    icon = Icons.Default.Email,
+                    icon = Icons.Outlined.Email,
                     title = "电子邮箱",
                     content = "1444170707@qq.com",
                     onClick = {
@@ -159,7 +161,7 @@ fun DeveloperScreen(
                 )
 
                 ContactCard(
-                    icon = Icons.Default.Face,
+                    icon = Icons.Outlined.Face,
                     title = "GitHub",
                     content = "https://github.com/Abnerla",
                     onClick = {
@@ -188,7 +190,7 @@ fun DeveloperScreen(
                         Text(
                             text = "特别感谢",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = "感谢所有使用和支持粉笔标注的用户，你们的反馈和建议是我们持续改进的动力！",
@@ -227,20 +229,13 @@ private fun DeveloperHeader() {
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape)
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF6366F1),
-                            Color(0xFF8B5CF6)
-                        )
-                    )
-                ),
+                .background(IOSBlueSurface),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Person,
+                imageVector = Icons.Outlined.Person,
                 contentDescription = null,
-                tint = Color.White,
+                tint = IOSBlue,
                 modifier = Modifier.size(40.dp)
             )
         }
@@ -248,7 +243,7 @@ private fun DeveloperHeader() {
         Text(
             text = "粉笔标注开发团队",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.SemiBold
         )
 
         Text(
@@ -304,7 +299,7 @@ private fun DeveloperCard(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = role,

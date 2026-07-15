@@ -20,6 +20,7 @@ import android.util.Log
 import android.view.WindowManager
 import com.example.annotation.drawing.DrawingEngine
 import java.nio.ByteBuffer
+import java.util.concurrent.Executors
 
 /**
  * 屏幕捕获管理器 - 完全重写版本
@@ -35,7 +36,13 @@ class ScreenCaptureManager private constructor(private val context: Context) {
     private var mediaProjection: MediaProjection? = null
     private var imageReader: ImageReader? = null
     private var virtualDisplay: VirtualDisplay? = null
+    private var captureWidth: Int = 0
+    private var captureHeight: Int = 0
+    private var captureDensity: Int = 0
+    @Volatile
+    private var isCaptureInProgress: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
+    private val captureExecutor = Executors.newSingleThreadExecutor()
 
     // 权限数据缓存
     private var cachedResultCode: Int = 0
@@ -90,9 +97,9 @@ class ScreenCaptureManager private constructor(private val context: Context) {
 
         // 保存权限状态到SharedPreferences
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_HAS_PERMISSION, true).apply()
+        val saved = prefs.edit().putBoolean(KEY_HAS_PERMISSION, true).commit()
 
-        Log.d(TAG, "已保存到SharedPreferences: has_permission=true")
+        Log.d(TAG, "已保存到SharedPreferences: has_permission=true, success=$saved")
         Log.d(TAG, "========== 权限数据保存完成 ==========")
     }
 
@@ -125,6 +132,13 @@ class ScreenCaptureManager private constructor(private val context: Context) {
                 override fun onStop() {
                     Log.d(TAG, "MediaProjection已停止")
                     cleanup()
+                    mediaProjection = null
+                    cachedResultCode = 0
+                    cachedData = null
+                    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(KEY_HAS_PERMISSION, false)
+                        .commit()
                 }
             }, handler)
 
@@ -191,6 +205,13 @@ class ScreenCaptureManager private constructor(private val context: Context) {
             return
         }
 
+        if (isCaptureInProgress) {
+            onError(IllegalStateException("截图正在处理中，请稍候"))
+            return
+        }
+
+        isCaptureInProgress = true
+
         try {
             // 获取屏幕尺寸 - 使用WindowManager而不是Context.display
             val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -206,31 +227,58 @@ class ScreenCaptureManager private constructor(private val context: Context) {
 
             Log.d(TAG, "屏幕尺寸: ${screenWidth}x${screenHeight}, DPI: $screenDensity")
 
-            // 创建ImageReader
-            imageReader = ImageReader.newInstance(
-                screenWidth,
-                screenHeight,
-                PixelFormat.RGBA_8888,
-                2
-            )
+            if (virtualDisplay == null || imageReader == null) {
+                // Android 14+一次授权只允许创建一个VirtualDisplay，后续截图复用它。
+                imageReader = ImageReader.newInstance(
+                    screenWidth,
+                    screenHeight,
+                    PixelFormat.RGBA_8888,
+                    2
+                )
 
-            // 创建VirtualDisplay
-            virtualDisplay = mediaProjection?.createVirtualDisplay(
-                "ScreenCapture",
-                screenWidth,
-                screenHeight,
-                screenDensity,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                imageReader?.surface,
-                null,
-                handler
-            )
+                virtualDisplay = mediaProjection?.createVirtualDisplay(
+                    "ScreenCapture",
+                    screenWidth,
+                    screenHeight,
+                    screenDensity,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    imageReader?.surface,
+                    null,
+                    handler
+                )
+
+                captureWidth = screenWidth
+                captureHeight = screenHeight
+                captureDensity = screenDensity
+                Log.d(TAG, "VirtualDisplay创建成功，等待渲染...")
+            } else if (
+                captureWidth != screenWidth ||
+                captureHeight != screenHeight ||
+                captureDensity != screenDensity
+            ) {
+                // 旋转或分辨率变化时调整现有VirtualDisplay，不能重新创建。
+                val newImageReader = ImageReader.newInstance(
+                    screenWidth,
+                    screenHeight,
+                    PixelFormat.RGBA_8888,
+                    2
+                )
+                virtualDisplay?.surface = null
+                imageReader?.close()
+                virtualDisplay?.resize(screenWidth, screenHeight, screenDensity)
+                virtualDisplay?.surface = newImageReader.surface
+                imageReader = newImageReader
+                captureWidth = screenWidth
+                captureHeight = screenHeight
+                captureDensity = screenDensity
+                Log.d(TAG, "VirtualDisplay尺寸已更新，等待渲染...")
+            } else {
+                Log.d(TAG, "复用现有VirtualDisplay，等待最新帧...")
+            }
 
             if (virtualDisplay == null) {
                 throw IllegalStateException("VirtualDisplay创建失败")
             }
-
-            Log.d(TAG, "VirtualDisplay创建成功，等待渲染...")
 
             // 延迟捕获，确保VirtualDisplay已经渲染完成
             handler.postDelayed({
@@ -239,7 +287,7 @@ class ScreenCaptureManager private constructor(private val context: Context) {
 
         } catch (e: Exception) {
             Log.e(TAG, "屏幕捕获失败", e)
-            cleanup()
+            isCaptureInProgress = false
             onError(e)
         }
     }
@@ -254,49 +302,55 @@ class ScreenCaptureManager private constructor(private val context: Context) {
         onSuccess: (Uri) -> Unit,
         onError: (Exception) -> Unit
     ) {
-        try {
-            val image = imageReader?.acquireLatestImage()
-
-            if (image == null) {
-                Log.e(TAG, "无法获取图像")
-                cleanup()
-                onError(IllegalStateException("无法获取屏幕图像，请重试"))
-                return
-            }
-
-            Log.d(TAG, "成功获取图像，开始转换为Bitmap")
-
-            // 转换为Bitmap
-            val screenBitmap = imageToBitmap(image, width, height)
-            image.close()
-
-            // 在Bitmap上绘制标注
-            val canvas = Canvas(screenBitmap)
-            val paths = drawingEngine.paths
-
-            Log.d(TAG, "绘制 ${paths.size} 条标注路径")
-
-            paths.forEach { path ->
-                ScreenshotHelper.drawPathOnCanvas(canvas, path, drawingEngine)
-            }
-
-            // 保存到相册
-            Log.d(TAG, "保存图像到相册")
-            val uri = ScreenshotHelper.saveBitmapToGallery(context, screenBitmap)
-
-            // 回收Bitmap
-            screenBitmap.recycle()
-
-            // 清理资源
-            cleanup()
-
-            Log.d(TAG, "截图保存成功: $uri")
-            onSuccess(uri)
-
+        val image = try {
+            imageReader?.acquireLatestImage()
         } catch (e: Exception) {
-            Log.e(TAG, "图像捕获失败", e)
-            cleanup()
+            Log.e(TAG, "获取屏幕图像失败", e)
+            isCaptureInProgress = false
             onError(e)
+            return
+        }
+
+        if (image == null) {
+            Log.e(TAG, "无法获取图像")
+            isCaptureInProgress = false
+            onError(IllegalStateException("无法获取屏幕图像，请重试"))
+            return
+        }
+
+        // 像素转换、标注合成和PNG写入都比较耗时，放到单线程后台执行，
+        // 回调再切回主线程更新Compose状态和显示Toast。
+        captureExecutor.execute {
+            var screenBitmap: Bitmap? = null
+            try {
+                Log.d(TAG, "成功获取图像，开始转换为Bitmap")
+                screenBitmap = imageToBitmap(image, width, height)
+
+                val canvas = Canvas(screenBitmap)
+                val paths = drawingEngine.paths.toList()
+                Log.d(TAG, "绘制 ${paths.size} 条标注路径")
+                paths.forEach { path ->
+                    ScreenshotHelper.drawPathOnCanvas(canvas, path, drawingEngine)
+                }
+
+                Log.d(TAG, "保存图像到相册")
+                val uri = ScreenshotHelper.saveBitmapToGallery(context, screenBitmap)
+                Log.d(TAG, "截图保存成功: $uri")
+
+                handler.post {
+                    isCaptureInProgress = false
+                    onSuccess(uri)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "图像捕获失败", e)
+                handler.post {
+                    isCaptureInProgress = false
+                    onError(e)
+                }
+            } finally {
+                image.close()
+                screenBitmap?.recycle()
+            }
         }
     }
 
@@ -337,6 +391,10 @@ class ScreenCaptureManager private constructor(private val context: Context) {
 
             imageReader?.close()
             imageReader = null
+            captureWidth = 0
+            captureHeight = 0
+            captureDensity = 0
+            isCaptureInProgress = false
         } catch (e: Exception) {
             Log.e(TAG, "清理资源时出错", e)
         }

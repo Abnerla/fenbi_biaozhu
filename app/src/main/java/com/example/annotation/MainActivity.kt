@@ -1,4 +1,4 @@
-package com.example.annotation
+﻿package com.example.annotation
 
 import android.content.Context
 import android.content.Intent
@@ -21,13 +21,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +38,12 @@ import com.example.annotation.model.VersionInfo
 import com.example.annotation.service.OverlayService
 import com.example.annotation.ui.*
 import com.example.annotation.ui.theme.AnnotationTheme
+import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.ui.theme.IOSBlueSurface
+import com.example.annotation.ui.theme.IOSGreenSurface
+import com.example.annotation.ui.theme.IOSLabel
+import com.example.annotation.ui.theme.IOSSecondaryLabel
+import com.example.annotation.ui.theme.iosSwitchColors
 import com.example.annotation.update.ApkDownloader
 import com.example.annotation.update.UpdateManager
 import com.example.annotation.utils.PermissionHelper
@@ -110,17 +115,20 @@ class MainActivity : ComponentActivity() {
             // 1. 保存权限数据到ScreenCaptureManager
             screenCaptureManager.savePermissionData(result.resultCode, result.data!!)
 
-            // 2. 启动或通知OverlayService初始化MediaProjection
+            // 2. 服务已运行时立即更新MediaProjection；未运行时由权限齐全后的
+            // 普通启动从内存缓存中初始化，避免仅授权截图就创建悬浮窗服务。
             val serviceIntent = Intent(this, OverlayService::class.java).apply {
                 action = "ACTION_SET_MEDIA_PROJECTION"
                 putExtra("resultCode", result.resultCode)
                 putExtra("data", result.data)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
+            if (checkServiceRunning()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
             }
 
             // 3. 更新权限状态
@@ -557,14 +565,14 @@ fun MainScreen(
                 title = {
                     Text(
                         text = "粉笔标注",
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 20.sp
                     )
                 },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Outlined.Settings,
                             contentDescription = "设置",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
@@ -614,15 +622,7 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF6366F1), // Indigo
-                                        Color(0xFF8B5CF6), // Purple
-                                        Color(0xFFEC4899)  // Pink
-                                    )
-                                )
-                            )
+                            .background(IOSBlueSurface)
                             .padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -631,24 +631,24 @@ fun MainScreen(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Create,
+                                imageVector = Icons.Outlined.Create,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color.White
+                                tint = IOSBlue
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "全局屏幕标注工具",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
+                                color = IOSLabel,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "随时随页，自由标注",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = IOSSecondaryLabel,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -661,7 +661,7 @@ fun MainScreen(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (permissionStatus.isAllGranted())
-                            MaterialTheme.colorScheme.primaryContainer
+                            IOSGreenSurface
                         else
                             MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -692,7 +692,7 @@ fun MainScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Create,
+                                        imageVector = Icons.Outlined.Create,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(24.dp)
@@ -725,7 +725,8 @@ fun MainScreen(
                                         onStopService()
                                     }
                                 },
-                                enabled = permissionStatus.isAllGranted()
+                                enabled = permissionStatus.isAllGranted(),
+                                colors = iosSwitchColors()
                             )
                         }
                     }
@@ -748,7 +749,7 @@ fun MainScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = Icons.Outlined.CheckCircle,
                                 contentDescription = null,
                                 tint = if (permissionStatus.isAllGranted())
                                     MaterialTheme.colorScheme.primary
@@ -764,7 +765,7 @@ fun MainScreen(
                         }
 
                         PermissionItemModern(
-                            icon = Icons.Default.Info,
+                            icon = Icons.Outlined.Info,
                             name = "屏幕捕获权限",
                             description = "截图时捕获屏幕实际内容",
                             isGranted = permissionStatus.hasScreenCapture,
@@ -772,7 +773,7 @@ fun MainScreen(
                         )
 
                         PermissionItemModern(
-                            icon = Icons.Default.Star,
+                            icon = Icons.Outlined.Star,
                             name = "悬浮窗权限",
                             description = "允许应用在其他应用上层显示",
                             isGranted = permissionStatus.hasOverlay,
@@ -780,7 +781,7 @@ fun MainScreen(
                         )
 
                         PermissionItemModern(
-                            icon = Icons.Default.Notifications,
+                            icon = Icons.Outlined.Notifications,
                             name = "通知权限",
                             description = "保持服务在后台运行",
                             isGranted = permissionStatus.hasNotification,
@@ -788,7 +789,7 @@ fun MainScreen(
                         )
 
                         PermissionItemModern(
-                            icon = Icons.Default.Build,
+                            icon = Icons.Outlined.Build,
                             name = "存储权限",
                             description = "保存标注截图到相册",
                             isGranted = permissionStatus.hasStorage,
@@ -798,7 +799,7 @@ fun MainScreen(
                         // Only show on Android 14+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                             PermissionItemModern(
-                                icon = Icons.Default.DateRange,
+                                icon = Icons.Outlined.DateRange,
                                 name = "前台服务权限",
                                 description = "允许应用在前台运行媒体投影服务",
                                 isGranted = permissionStatus.hasForegroundServiceMediaProjection,
@@ -822,7 +823,7 @@ fun MainScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Info,
+                            imageVector = Icons.Outlined.Info,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -854,7 +855,7 @@ fun PermissionItemModern(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isGranted)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                IOSGreenSurface
             else
                 MaterialTheme.colorScheme.surface
         )
@@ -910,7 +911,7 @@ fun PermissionItemModern(
 
             if (isGranted) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = "已授权",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp)
@@ -918,7 +919,11 @@ fun PermissionItemModern(
             } else {
                 FilledTonalButton(
                     onClick = onRequest,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = IOSBlueSurface,
+                        contentColor = IOSBlue
+                    )
                 ) {
                     Text("授权")
                 }
@@ -944,9 +949,9 @@ fun PermissionItem(
         ) {
             Icon(
                 imageVector = if (isGranted) {
-                    Icons.Default.Check
+                    Icons.Outlined.Check
                 } else {
-                    Icons.Default.Close
+                    Icons.Outlined.Close
                 },
                 contentDescription = null,
                 tint = if (isGranted) {

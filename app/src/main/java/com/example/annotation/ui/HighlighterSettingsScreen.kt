@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -14,10 +14,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +37,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.annotation.model.ColorPresets
 import com.example.annotation.utils.PreferencesManager
+import com.example.annotation.ui.theme.IOSDivider
+import com.example.annotation.ui.theme.IOSRed
+import com.example.annotation.ui.theme.IOSSurface
+import com.example.annotation.ui.theme.iosTextFieldColors
 import com.github.skydoves.colorpicker.compose.AlphaSlider
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
@@ -128,7 +132,7 @@ fun HighlighterSettingsScreen(
                     ) {
                         Text(
                             text = "笔设置",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -145,7 +149,7 @@ fun HighlighterSettingsScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -200,7 +204,7 @@ fun HighlighterSettingsScreen(
                 Text(
                     text = "画笔颜色顺序",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 TextButton(
                     onClick = {
@@ -289,7 +293,7 @@ fun HighlighterSettingsScreen(
                 Text(
                     text = "荧光笔颜色顺序",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 TextButton(
                     onClick = {
@@ -462,11 +466,13 @@ fun HighlighterSettingsScreen(
         if (showErrorDialog) {
             AlertDialog(
                 onDismissRequest = { showErrorDialog = false },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
                 title = {
                     Text(
                         text = "无法添加颜色",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 text = {
@@ -511,7 +517,7 @@ private fun HighlighterAlphaSetting(
             Text(
                 text = "${(alpha * 100).toInt()}%",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -741,7 +747,7 @@ private fun ColorOrderSection(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        imageVector = Icons.Outlined.Add,
                         contentDescription = "添加自定义颜色",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
@@ -817,14 +823,15 @@ private fun ColorOrderItem(
                     .align(Alignment.TopEnd)
                     .size(18.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.8f))
+                    .background(IOSSurface)
+                    .border(1.dp, IOSDivider, CircleShape)
                     .clickable(onClick = onDelete),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Outlined.Close,
                     contentDescription = "删除",
-                    tint = Color.White,
+                    tint = IOSRed,
                     modifier = Modifier.size(12.dp)
                 )
             }
@@ -925,7 +932,7 @@ private fun ColorPickerDialog(
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
             )
         ) {
             Column(
@@ -938,7 +945,7 @@ private fun ColorPickerDialog(
                 Text(
                     text = "选择颜色",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 // 颜色选择器
@@ -1030,7 +1037,9 @@ private fun ColorPickerDialog(
                                     prefix = { Text("#", style = MaterialTheme.typography.bodySmall) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
-                                    textStyle = MaterialTheme.typography.bodyMedium
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = iosTextFieldColors()
                                 )
                             }
                             ColorInputMode.RGB -> {
@@ -1049,7 +1058,9 @@ private fun ColorPickerDialog(
                                         label = { Text("R", style = MaterialTheme.typography.labelSmall) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodySmall
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = iosTextFieldColors()
                                     )
 
                                     // G输入框
@@ -1062,7 +1073,9 @@ private fun ColorPickerDialog(
                                         label = { Text("G", style = MaterialTheme.typography.labelSmall) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodySmall
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = iosTextFieldColors()
                                     )
 
                                     // B输入框
@@ -1075,7 +1088,9 @@ private fun ColorPickerDialog(
                                         label = { Text("B", style = MaterialTheme.typography.labelSmall) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodySmall
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = iosTextFieldColors()
                                     )
                                 }
                             }

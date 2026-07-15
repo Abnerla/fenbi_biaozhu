@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -12,9 +12,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,7 +57,7 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = "设置",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -74,7 +74,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -103,7 +103,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "工具栏设置",
                 description = "调整工具栏的属性",
-                icon = Icons.Default.Build,
+                icon = Icons.Outlined.Build,
                 onClick = onNavigateToToolbarSettings
             )
 
@@ -111,7 +111,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "笔设置",
                 description = "调整笔的细节",
-                icon = Icons.Default.Edit,
+                icon = Icons.Outlined.Edit,
                 onClick = onNavigateToHighlighterSettings
             )
 
@@ -119,7 +119,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "系统权限",
                 description = "管理应用所需权限",
-                icon = Icons.Default.Lock,
+                icon = Icons.Outlined.Lock,
                 onClick = onNavigateToPermissions
             )
 
@@ -127,7 +127,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "其他",
                 description = "其他杂项设置",
-                icon = Icons.Default.Settings,
+                icon = Icons.Outlined.Settings,
                 onClick = onNavigateToOtherSettings
             )
 
@@ -138,7 +138,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "版本信息",
                 description = "版本信息与更新",
-                icon = Icons.Default.Info,
+                icon = Icons.Outlined.Info,
                 onClick = onNavigateToAbout
             )
 
@@ -146,7 +146,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "开发人员",
                 description = "查看开发团队信息",
-                icon = Icons.Default.Person,
+                icon = Icons.Outlined.Person,
                 onClick = onNavigateToDeveloper
             )
 
@@ -154,7 +154,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "反馈",
                 description = "提交问题或建议",
-                icon = Icons.Default.Email,
+                icon = Icons.Outlined.Email,
                 onClick = onNavigateToFeedback
             )
 
@@ -162,7 +162,7 @@ fun SettingsScreen(
             SettingEntryCard(
                 title = "帮助",
                 description = "使用指南与常见问题",
-                icon = Icons.Default.Home,
+                icon = Icons.Outlined.Home,
                 onClick = onNavigateToHelp
             )
         }
@@ -177,7 +177,7 @@ private fun SettingGroupTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
     )
@@ -246,7 +246,7 @@ private fun SettingEntryCard(
             }
 
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(28.dp)

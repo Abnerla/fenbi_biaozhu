@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,16 +7,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Create
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +33,13 @@ import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.ColorPresets
 import com.example.annotation.model.DrawingTool
 import com.example.annotation.model.ToolbarPresets
+import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.ui.theme.IOSBlueSurface
+import com.example.annotation.ui.theme.IOSDivider
+import com.example.annotation.ui.theme.IOSLabel
+import com.example.annotation.ui.theme.IOSRed
+import com.example.annotation.ui.theme.IOSGreen
+import com.example.annotation.ui.theme.IOSSecondaryLabel
 
 /**
  * 工具栏视图 - 一级菜单和二级菜单系统
@@ -300,7 +307,7 @@ private fun ToolbarButtons(
             }
             "undo" -> {
                 ToolButton(
-                    icon = Icons.Default.Refresh,
+                    icon = Icons.Outlined.Refresh,
                     isSelected = false,
                     onClick = { drawingEngine.undo() },
                     description = tool.name
@@ -308,11 +315,11 @@ private fun ToolbarButtons(
             }
             "clear" -> {
                 ToolButton(
-                    icon = Icons.Default.Delete,
+                    icon = Icons.Outlined.Delete,
                     isSelected = false,
                     onClick = { drawingEngine.clearAll() },
                     description = tool.name,
-                    tint = Color.Red
+                    tint = IOSRed
                 )
             }
             "screenshot" -> {
@@ -321,26 +328,26 @@ private fun ToolbarButtons(
                     isSelected = false,
                     onClick = onScreenshot,
                     description = tool.name,
-                    tint = Color(0xFF4CAF50)
+                    tint = IOSGreen
                 )
             }
             "layout" -> {
                 ToolButton(
                     icon = when (toolbarPosition) {
                         com.example.annotation.ui.ToolbarPosition.LEFT,
-                        com.example.annotation.ui.ToolbarPosition.RIGHT -> Icons.Default.Menu
+                        com.example.annotation.ui.ToolbarPosition.RIGHT -> Icons.Outlined.Menu
                         com.example.annotation.ui.ToolbarPosition.TOP,
-                        com.example.annotation.ui.ToolbarPosition.BOTTOM -> Icons.Default.MoreVert
+                        com.example.annotation.ui.ToolbarPosition.BOTTOM -> Icons.Outlined.MoreVert
                     },
                     isSelected = false,
                     onClick = onToggleOrientation,
                     description = tool.name,
-                    tint = Color(0xFF2196F3)
+                    tint = IOSBlue
                 )
             }
             "exit" -> {
                 ToolButton(
-                    icon = Icons.Default.Close,
+                    icon = Icons.Outlined.Close,
                     isSelected = false,
                     onClick = onExit,
                     description = tool.name
@@ -573,7 +580,7 @@ private fun ColorItem(
             .background(color)
             .border(
                 width = if (color == currentColor) 2.dp else 0.8.dp,
-                color = if (color == currentColor) Color.Blue else Color.Gray,
+                color = if (color == currentColor) IOSBlue else IOSDivider,
                 shape = CircleShape
             )
             .clickable { onColorSelected(color) }
@@ -622,7 +629,7 @@ private fun SizeAdjuster(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = "增大",
                     modifier = Modifier.size(14.dp)
                 )
@@ -637,7 +644,7 @@ private fun SizeAdjuster(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
                     contentDescription = "减小",
                     modifier = Modifier.size(14.dp)
                 )
@@ -658,7 +665,7 @@ private fun SizeAdjuster(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
                     contentDescription = "减小",
                     modifier = Modifier.size(14.dp)
                 )
@@ -688,7 +695,7 @@ private fun SizeAdjuster(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = "增大",
                     modifier = Modifier.size(14.dp)
                 )
@@ -709,16 +716,16 @@ private fun ToolButtonWithPreview(
     previewColor: Color,
     previewSize: Float,
     showColorPreview: Boolean = true,
-    tint: Color = Color.Black
+    tint: Color = IOSLabel
 ) {
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) Color(0xFF2196F3) else Color.Transparent,
+                color = if (isSelected) IOSBlue else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -731,7 +738,7 @@ private fun ToolButtonWithPreview(
             Icon(
                 painter = painter,
                 contentDescription = description,
-                tint = if (isSelected) Color(0xFF2196F3) else tint,
+                tint = if (isSelected) IOSBlue else tint,
                 modifier = Modifier.size(14.dp)
             )
 
@@ -759,16 +766,16 @@ private fun ToolButton(
     isSelected: Boolean,
     onClick: () -> Unit,
     description: String,
-    tint: Color = Color.Black
+    tint: Color = IOSLabel
 ) {
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) Color(0xFF2196F3) else Color.Transparent,
+                color = if (isSelected) IOSBlue else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -777,7 +784,7 @@ private fun ToolButton(
         Icon(
             imageVector = icon,
             contentDescription = description,
-            tint = if (isSelected) Color(0xFF2196F3) else tint,
+            tint = if (isSelected) IOSBlue else tint,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -792,16 +799,16 @@ private fun ToolButtonWithImage(
     isSelected: Boolean,
     onClick: () -> Unit,
     description: String,
-    tint: Color = Color.Black
+    tint: Color = IOSLabel
 ) {
     Box(
         modifier = Modifier
             .size(32.dp)
             .clip(CircleShape)
-            .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+            .background(if (isSelected) IOSBlueSurface else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.dp,
-                color = if (isSelected) Color(0xFF2196F3) else Color.Transparent,
+                color = if (isSelected) IOSBlue else Color.Transparent,
                 shape = CircleShape
             )
             .clickable(onClick = onClick),
@@ -810,7 +817,7 @@ private fun ToolButtonWithImage(
         Icon(
             painter = painter,
             contentDescription = description,
-            tint = if (isSelected) Color(0xFF2196F3) else tint,
+            tint = if (isSelected) IOSBlue else tint,
             modifier = Modifier.size(16.dp)
         )
     }

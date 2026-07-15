@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -11,8 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,7 +55,7 @@ fun PermissionsScreen(
                     ) {
                         Text(
                             text = "系统权限",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -72,7 +72,7 @@ fun PermissionsScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -101,13 +101,13 @@ fun PermissionsScreen(
             Text(
                 text = "应用权限说明",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
 
             // 屏幕捕获权限
             PermissionDetailCard(
-                icon = Icons.Default.Info,
+                icon = Icons.Outlined.Info,
                 title = "屏幕捕获权限",
                 description = "允许应用在截图时捕获屏幕实际显示的内容（包括视频、浏览器等），与标注内容合成保存",
                 isGranted = permissionStatus.hasScreenCapture,
@@ -116,7 +116,7 @@ fun PermissionsScreen(
 
             // 悬浮窗权限
             PermissionDetailCard(
-                icon = Icons.Default.Star,
+                icon = Icons.Outlined.Star,
                 title = "悬浮窗权限",
                 description = "允许应用在其他应用上层显示悬浮按钮和工具栏，这是核心功能必需的权限",
                 isGranted = permissionStatus.hasOverlay,
@@ -125,7 +125,7 @@ fun PermissionsScreen(
 
             // 通知权限
             PermissionDetailCard(
-                icon = Icons.Default.Notifications,
+                icon = Icons.Outlined.Notifications,
                 title = "通知权限",
                 description = "保持服务在后台持续运行，确保悬浮按钮不会被系统回收",
                 isGranted = permissionStatus.hasNotification,
@@ -134,7 +134,7 @@ fun PermissionsScreen(
 
             // 存储权限
             PermissionDetailCard(
-                icon = Icons.Default.Build,
+                icon = Icons.Outlined.Build,
                 title = "存储权限",
                 description = "允许应用将标注后的截图保存到设备相册中",
                 isGranted = permissionStatus.hasStorage,
@@ -144,7 +144,7 @@ fun PermissionsScreen(
             // 前台服务权限 (Android 14+)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 PermissionDetailCard(
-                    icon = Icons.Default.DateRange,
+                    icon = Icons.Outlined.DateRange,
                     title = "前台服务权限",
                     description = "允许应用在前台运行媒体投影服务，这是Android 14+系统要求的权限",
                     isGranted = permissionStatus.hasForegroundServiceMediaProjection,
@@ -167,7 +167,7 @@ fun PermissionsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
+                        imageVector = Icons.Outlined.Info,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -219,7 +219,7 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (allGranted) Icons.Default.Check else Icons.Default.Warning,
+                    imageVector = if (allGranted) Icons.Outlined.Check else Icons.Outlined.Warning,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(32.dp)
@@ -232,7 +232,7 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
                 Text(
                     text = if (allGranted) "权限已完整" else "缺少必要权限",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = if (allGranted)
@@ -326,7 +326,7 @@ private fun PermissionDetailCard(
                     }
                 } else {
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        imageVector = Icons.Outlined.CheckCircle,
                         contentDescription = "已授权",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)

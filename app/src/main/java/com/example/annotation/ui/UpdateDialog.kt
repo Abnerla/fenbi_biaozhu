@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.annotation.model.VersionInfo
+import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.ui.theme.IOSBlueSurface
+import com.example.annotation.ui.theme.IOSRed
+import com.example.annotation.ui.theme.IOSRedSurface
 import kotlinx.coroutines.delay
 
 /**
@@ -95,9 +99,9 @@ fun UpdateDialog(
                     .wrapContentHeight()
                     .padding(horizontal = 24.dp),
                 shape = RoundedCornerShape(32.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 24.dp,
-                shadowElevation = 16.dp
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
+                tonalElevation = 0.dp,
+                shadowElevation = 3.dp
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth()
@@ -171,19 +175,7 @@ private fun HeaderSection(isForceUpdate: Boolean) {
             .fillMaxWidth()
             .height(100.dp)
             .background(
-                brush = Brush.verticalGradient(
-                    colors = if (isForceUpdate) {
-                        listOf(
-                            Color(0xFFFF6B6B),
-                            Color(0xFFFF8E53)
-                        )
-                    } else {
-                        listOf(
-                            Color(0xFF667EEA),
-                            Color(0xFF764BA2)
-                        )
-                    }
-                ),
+                color = if (isForceUpdate) IOSRedSurface else IOSBlueSurface,
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ),
         contentAlignment = Alignment.Center
@@ -321,18 +313,18 @@ private fun AnimatedIcon(isForceUpdate: Boolean) {
                 .scale(scale),
             shape = CircleShape,
             color = Color.White,
-            shadowElevation = 8.dp
+            shadowElevation = 1.dp
         ) {
             Box(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isForceUpdate) Icons.Default.Warning else Icons.Default.Star,
+                    imageVector = if (isForceUpdate) Icons.Outlined.Warning else Icons.Outlined.Star,
                     contentDescription = null,
                     modifier = Modifier
                         .size(28.dp)
                         .rotate(iconRotation),
-                    tint = if (isForceUpdate) Color(0xFFFF6B6B) else Color(0xFF667EEA)
+                    tint = if (isForceUpdate) IOSRed else IOSBlue
                 )
             }
         }
@@ -691,7 +683,7 @@ private fun TitleSection(isForceUpdate: Boolean) {
         Text(
             text = if (isForceUpdate) "强制更新" else "发现新版本",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 18.sp
         )
@@ -714,7 +706,7 @@ private fun UpdateContentCard(updateDesc: String, version: String) {
             Text(
                 text = "更新内容",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp
             )
@@ -778,7 +770,7 @@ private fun ProgressSection(progress: Int) {
                 )
 
                 Icon(
-                    imageVector = Icons.Default.Build,
+                    imageVector = Icons.Outlined.Build,
                     contentDescription = null,
                     modifier = Modifier
                         .size(20.dp)
@@ -789,7 +781,7 @@ private fun ProgressSection(progress: Int) {
                 Text(
                     text = "正在下载",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -797,7 +789,7 @@ private fun ProgressSection(progress: Int) {
             Text(
                 text = "$progress%",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -817,13 +809,7 @@ private fun ProgressSection(progress: Int) {
                     .fillMaxWidth(progress / 100f)
                     .fillMaxHeight()
                     .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF667EEA),
-                                Color(0xFF764BA2),
-                                Color(0xFF8B5CF6)
-                            )
-                        ),
+                        color = IOSBlue,
                         shape = RoundedCornerShape(5.dp)
                     )
             )
@@ -847,7 +833,7 @@ private fun ForceUpdateWarning() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Warning,
+                imageVector = Icons.Outlined.Warning,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.error
@@ -942,7 +928,7 @@ private fun BottomButtonSection(
                     Text(
                         text = if (downloadProgress != null) "下载中..." else "立即更新",
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.5.sp
                     )
                 }

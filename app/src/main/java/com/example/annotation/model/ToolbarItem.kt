@@ -1,8 +1,8 @@
-package com.example.annotation.model
+﻿package com.example.annotation.model
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 
 /**
  * 工具栏工具项
@@ -23,12 +23,12 @@ object ToolbarPresets {
         ToolbarItem("highlighter", "荧光笔", "highlighter"),
         ToolbarItem("eraser", "橡皮擦", "eraser"),
         ToolbarItem("divider1", "", isDivider = true),
-        ToolbarItem("undo", "撤销", Icons.Default.Refresh),
-        ToolbarItem("clear", "清空", Icons.Default.Delete),
+        ToolbarItem("undo", "撤销", Icons.Outlined.Refresh),
+        ToolbarItem("clear", "清空", Icons.Outlined.Delete),
         ToolbarItem("screenshot", "截图", "screenshot"),
         ToolbarItem("divider2", "", isDivider = true),
-        ToolbarItem("layout", "切换布局", Icons.Default.Menu),
-        ToolbarItem("exit", "退出", Icons.Default.Close)
+        ToolbarItem("layout", "切换布局", Icons.Outlined.Menu),
+        ToolbarItem("exit", "退出", Icons.Outlined.Close)
     )
 
     // 默认工具顺序

@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -16,8 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,7 +53,7 @@ fun HelpScreen(
                     ) {
                         Text(
                             text = "帮助",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -70,7 +70,7 @@ fun HelpScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -96,7 +96,7 @@ fun HelpScreen(
             Text(
                 text = "快速入门",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
@@ -104,28 +104,28 @@ fun HelpScreen(
                 step = "1",
                 title = "授予权限",
                 description = "首次使用需要授予悬浮窗、通知和存储权限",
-                icon = Icons.Default.Lock
+                icon = Icons.Outlined.Lock
             )
 
             QuickStartCard(
                 step = "2",
                 title = "启动服务",
                 description = "在主页面开启标注服务，屏幕上会显示悬浮按钮",
-                icon = Icons.Default.PlayArrow
+                icon = Icons.Outlined.PlayArrow
             )
 
             QuickStartCard(
                 step = "3",
                 title = "开始标注",
                 description = "点击悬浮按钮展开工具栏，选择画笔或荧光笔开始标注",
-                icon = Icons.Default.Create
+                icon = Icons.Outlined.Create
             )
 
             QuickStartCard(
                 step = "4",
                 title = "保存截图",
                 description = "标注完成后点击截图按钮，图片将保存到相册",
-                icon = Icons.Default.Star
+                icon = Icons.Outlined.Star
             )
 
             // 常见问题
@@ -134,7 +134,7 @@ fun HelpScreen(
             Text(
                 text = "常见问题",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             FAQItem(
@@ -177,36 +177,36 @@ fun HelpScreen(
             Text(
                 text = "工具说明",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
             ToolDescriptionCard(
-                icon = Icons.Default.Edit,
+                icon = Icons.Outlined.Edit,
                 title = "画笔",
                 description = "自由绘制线条，支持多种颜色和粗细选择"
             )
 
             ToolDescriptionCard(
-                icon = Icons.Default.Build,
+                icon = Icons.Outlined.Build,
                 title = "荧光笔",
                 description = "半透明标记工具，适合突出重点内容"
             )
 
             ToolDescriptionCard(
-                icon = Icons.Default.Close,
+                icon = Icons.Outlined.Close,
                 title = "橡皮擦",
                 description = "擦除已绘制的内容，支持调节擦除范围"
             )
 
             ToolDescriptionCard(
-                icon = Icons.Default.Delete,
+                icon = Icons.Outlined.Delete,
                 title = "清空",
                 description = "一键清除画布上的所有标注内容"
             )
 
             ToolDescriptionCard(
-                icon = Icons.Default.Star,
+                icon = Icons.Outlined.Star,
                 title = "截图",
                 description = "将当前屏幕和标注内容保存为图片"
             )
@@ -248,7 +248,7 @@ private fun QuickStartCard(
                 Text(
                     text = step,
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
@@ -260,7 +260,7 @@ private fun QuickStartCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
@@ -317,7 +317,7 @@ private fun FAQItem(
                 )
 
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
                     contentDescription = if (expanded) "收起" else "展开",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier

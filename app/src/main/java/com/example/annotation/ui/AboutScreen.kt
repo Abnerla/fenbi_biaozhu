@@ -1,4 +1,4 @@
-package com.example.annotation.ui
+﻿package com.example.annotation.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -12,8 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.annotation.ui.theme.iosSwitchColors
+import com.example.annotation.ui.theme.IOSBlue
+import com.example.annotation.ui.theme.IOSBlueSurface
 import com.example.annotation.utils.PreferencesManager
 
 /**
@@ -58,7 +61,7 @@ fun AboutScreen(
                     ) {
                         Text(
                             text = "版本信息",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 20.sp
                         )
                     }
@@ -75,7 +78,7 @@ fun AboutScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = "返回",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -145,17 +148,9 @@ private fun AppHeaderSection(currentVersion: String) {
         Box(
             modifier = Modifier
                 .size(100.dp)
-                .shadow(8.dp, CircleShape)
+                .shadow(2.dp, CircleShape)
                 .clip(CircleShape)
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF6366F1),
-                            Color(0xFF8B5CF6),
-                            Color(0xFFEC4899)
-                        )
-                    )
-                )
+                .background(IOSBlueSurface)
                 .border(
                     width = 3.dp,
                     color = MaterialTheme.colorScheme.surface,
@@ -164,9 +159,9 @@ private fun AppHeaderSection(currentVersion: String) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Create,
+                imageVector = Icons.Outlined.Create,
                 contentDescription = "应用图标",
-                tint = Color.White,
+                tint = IOSBlue,
                 modifier = Modifier.size(50.dp)
             )
         }
@@ -175,7 +170,7 @@ private fun AppHeaderSection(currentVersion: String) {
         Text(
             text = "粉笔标注",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
 
@@ -219,7 +214,7 @@ private fun UpdateButton(onClick: () -> Unit) {
         )
     ) {
         Icon(
-            imageVector = Icons.Default.Refresh,
+            imageVector = Icons.Outlined.Refresh,
             contentDescription = null,
             modifier = Modifier.size(20.dp)
         )
@@ -247,32 +242,32 @@ private fun FeatureSection() {
         Text(
             text = "功能特性",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         // 功能列表
         FeatureItem(
-            icon = Icons.Default.Create,
+            icon = Icons.Outlined.Create,
             title = "自由标注",
             description = "支持画笔、荧光笔、橡皮擦等多种工具"
         )
 
         FeatureItem(
-            icon = Icons.Default.Favorite,
+            icon = Icons.Outlined.Favorite,
             title = "全局悬浮",
             description = "随时随页调出工具栏，快速开始标注"
         )
 
         FeatureItem(
-            icon = Icons.Default.Star,
+            icon = Icons.Outlined.Star,
             title = "一键截图",
             description = "标注完成后一键保存到相册"
         )
 
         FeatureItem(
-            icon = Icons.Default.Settings,
+            icon = Icons.Outlined.Settings,
             title = "个性化设置",
             description = "自定义工具栏和画笔属性"
         )
@@ -360,7 +355,7 @@ private fun AutoUpdateSettings(
             modifier = Modifier.weight(1f)
         ) {
             Icon(
-                imageVector = Icons.Default.Refresh,
+                imageVector = Icons.Outlined.Refresh,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
@@ -375,7 +370,8 @@ private fun AutoUpdateSettings(
         Switch(
             checked = autoCheckUpdate,
             onCheckedChange = onToggle,
-            modifier = Modifier.height(32.dp)
+            modifier = Modifier.height(32.dp),
+            colors = iosSwitchColors()
         )
     }
 }

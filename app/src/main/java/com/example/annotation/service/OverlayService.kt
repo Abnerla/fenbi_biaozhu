@@ -1,4 +1,4 @@
-package com.example.annotation.service
+﻿package com.example.annotation.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,12 +10,13 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.outlined.Create
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -44,6 +45,8 @@ import com.example.annotation.MainActivity
 import com.example.annotation.R
 import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.ui.OverlayContent
+import com.example.annotation.ui.theme.AnnotationTheme
+import com.example.annotation.ui.theme.IOSBlue
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
@@ -160,8 +163,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
 
-        // 使用 specialUse 类型启动前台服务
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        // Android 14+ 使用 specialUse 类型维持悬浮标注服务。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
                 createNotification(),
@@ -177,10 +180,23 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         // 恢复绘图工具配置
         restoreDrawingConfigs()
 
-        // 尝试恢复MediaProjection（如果之前已经授权过）
-        tryRestoreMediaProjection()
+    }
 
-        showFloatingButton()
+    /**
+     * 在创建MediaProjection前将当前前台服务升级为mediaProjection类型。
+     * Android 14+要求此调用严格发生在用户授权之后、getMediaProjection之前。
+     */
+    private fun promoteToMediaProjectionForegroundService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            var serviceTypes = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                serviceTypes = serviceTypes or
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            }
+            startForeground(NOTIFICATION_ID, createNotification(), serviceTypes)
+        } else {
+            startForeground(NOTIFICATION_ID, createNotification())
+        }
     }
 
     /**
@@ -194,11 +210,13 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             val (resultCode, data) = cachedData
             android.util.Log.d("OverlayService", "发现缓存的权限数据，尝试初始化MediaProjection")
 
+            promoteToMediaProjectionForegroundService()
             val success = screenCaptureManager.initializeMediaProjection(resultCode, data)
             if (success) {
                 android.util.Log.d("OverlayService", "从缓存恢复MediaProjection成功")
             } else {
                 android.util.Log.w("OverlayService", "从缓存恢复MediaProjection失败")
+                screenCaptureManager.reset()
             }
         } else {
             android.util.Log.d("OverlayService", "没有缓存的权限数据")
@@ -207,6 +225,18 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         android.util.Log.d("OverlayService", "onStartCommand called, action=${intent?.action}")
+
+        // 服务可能被系统以START_STICKY恢复，也可能在权限页操作过程中收到启动请求。
+        // 无悬浮窗权限时绝不能添加TYPE_APPLICATION_OVERLAY窗口。
+        if (!Settings.canDrawOverlays(this)) {
+            android.util.Log.w("OverlayService", "缺少悬浮窗权限，停止服务以避免窗口权限异常")
+            removeOverlay()
+            removeFloatingButton()
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
+        showFloatingButton()
 
         // 处理屏幕捕获权限设置
         if (intent?.action == "ACTION_SET_MEDIA_PROJECTION") {
@@ -220,10 +250,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
             android.util.Log.d("OverlayService", "收到MediaProjection权限数据: resultCode=$resultCode, data=$data")
 
-            if (resultCode != -1 && data != null) {
+            if (resultCode == android.app.Activity.RESULT_OK && data != null) {
                 android.util.Log.d("OverlayService", "在前台服务中初始化MediaProjection")
 
                 // 在前台服务中初始化MediaProjection
+                promoteToMediaProjectionForegroundService()
                 val success = screenCaptureManager.initializeMediaProjection(resultCode, data)
 
                 if (success) {
@@ -231,6 +262,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                     Toast.makeText(this, "屏幕捕获权限已授予，可以开始截图", Toast.LENGTH_SHORT).show()
                 } else {
                     android.util.Log.e("OverlayService", "MediaProjection初始化失败")
+                    screenCaptureManager.reset()
                     Toast.makeText(this, "屏幕捕获权限初始化失败，请重试", Toast.LENGTH_LONG).show()
                 }
             } else {
@@ -386,6 +418,10 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      */
     private fun showFloatingButton() {
         if (floatingButton != null) return
+        if (!Settings.canDrawOverlays(this)) {
+            android.util.Log.w("OverlayService", "showFloatingButton: 悬浮窗权限不可用")
+            return
+        }
 
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
@@ -440,22 +476,31 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
 
             setContent {
-                DraggableFloatingButton(
-                    onClick = { showOverlay() },
-                    onDrag = { deltaX, deltaY ->
-                        params.x += deltaX.toInt()
-                        params.y += deltaY.toInt()
-                        windowManager.updateViewLayout(this@apply, params)
-                    },
-                    onDragEnd = {
-                        // 自动吸附到屏幕边缘
-                        snapToEdge(params, this@apply)
-                    }
-                )
+                AnnotationTheme {
+                    DraggableFloatingButton(
+                        onClick = { showOverlay() },
+                        onDrag = { deltaX, deltaY ->
+                            params.x += deltaX.toInt()
+                            params.y += deltaY.toInt()
+                            windowManager.updateViewLayout(this@apply, params)
+                        },
+                        onDragEnd = {
+                            // 自动吸附到屏幕边缘
+                            snapToEdge(params, this@apply)
+                        }
+                    )
+                }
             }
         }
 
-        windowManager.addView(floatingButton, params)
+        try {
+            windowManager.addView(floatingButton, params)
+        } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "添加悬浮按钮失败", e)
+            floatingButton = null
+            floatingButtonParams = null
+            stopSelf()
+        }
     }
 
     /**
@@ -519,6 +564,12 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      */
     private fun showOverlay() {
         if (overlayView != null) return
+        if (!Settings.canDrawOverlays(this)) {
+            android.util.Log.w("OverlayService", "showOverlay: 悬浮窗权限已失效")
+            removeFloatingButton()
+            stopSelf()
+            return
+        }
 
         // 隐藏悬浮按钮
         removeFloatingButton()
@@ -578,41 +629,49 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
 
             setContent {
-                // 读取工具栏可见性状态
-                val toolbarVisible by toolbarVisibleState
+                AnnotationTheme {
+                    // 读取工具栏可见性状态
+                    val toolbarVisible by toolbarVisibleState
 
-                OverlayContent(
-                    drawingEngine = drawingEngine,
-                    onExit = {
-                        removeOverlay()
-                        showFloatingButton()
-                    },
-                    onScreenshot = {
-                        handleScreenshot()
-                    },
-                    initialOffsetX = toolbarOffsetX,
-                    initialOffsetY = toolbarOffsetY,
-                    initialOrientation = toolbarOrientation,
-                    onToolbarPositionChanged = { x, y ->
-                        // 更新工具栏位置
-                        toolbarOffsetX = x
-                        toolbarOffsetY = y
-                        // 立即保存位置
-                        saveToolbarPosition(x, y)
-                    },
-                    onOrientationChanged = { orientation ->
-                        // 更新布局方向
-                        toolbarOrientation = orientation
-                        // 立即保存布局方向
-                        saveToolbarOrientation(orientation)
-                    },
-                    toolbarVisible = toolbarVisible,
-                    preferencesManager = preferencesManager
-                )
+                    OverlayContent(
+                        drawingEngine = drawingEngine,
+                        onExit = {
+                            removeOverlay()
+                            showFloatingButton()
+                        },
+                        onScreenshot = {
+                            handleScreenshot()
+                        },
+                        initialOffsetX = toolbarOffsetX,
+                        initialOffsetY = toolbarOffsetY,
+                        initialOrientation = toolbarOrientation,
+                        onToolbarPositionChanged = { x, y ->
+                            // 更新工具栏位置
+                            toolbarOffsetX = x
+                            toolbarOffsetY = y
+                            // 立即保存位置
+                            saveToolbarPosition(x, y)
+                        },
+                        onOrientationChanged = { orientation ->
+                            // 更新布局方向
+                            toolbarOrientation = orientation
+                            // 立即保存布局方向
+                            saveToolbarOrientation(orientation)
+                        },
+                        toolbarVisible = toolbarVisible,
+                        preferencesManager = preferencesManager
+                    )
+                }
             }
         }
 
-        windowManager.addView(overlayView, params)
+        try {
+            windowManager.addView(overlayView, params)
+        } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "添加标注悬浮层失败", e)
+            overlayView = null
+            showFloatingButton()
+        }
     }
 
     /**
@@ -620,7 +679,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      */
     private fun removeOverlay() {
         overlayView?.let {
-            windowManager.removeView(it)
+            try {
+                windowManager.removeView(it)
+            } catch (e: IllegalArgumentException) {
+                android.util.Log.w("OverlayService", "标注悬浮层已被系统移除", e)
+            }
             overlayView = null
         }
     }
@@ -630,7 +693,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      */
     private fun removeFloatingButton() {
         floatingButton?.let {
-            windowManager.removeView(it)
+            try {
+                windowManager.removeView(it)
+            } catch (e: IllegalArgumentException) {
+                android.util.Log.w("OverlayService", "悬浮按钮已被系统移除", e)
+            }
             floatingButton = null
         }
     }
@@ -782,12 +849,12 @@ private fun DraggableFloatingButton(
                     onClick()
                 }
             },
-            containerColor = androidx.compose.ui.graphics.Color(0xFF2196F3),
+            containerColor = IOSBlue,
             contentColor = androidx.compose.ui.graphics.Color.White,
             modifier = Modifier.size(40.dp)
         ) {
             androidx.compose.material3.Icon(
-                imageVector = Icons.Default.Create,
+                imageVector = Icons.Outlined.Create,
                 contentDescription = "开始标注"
             )
         }
@@ -798,12 +865,12 @@ private fun DraggableFloatingButton(
 private fun FloatingButtonContent(onClick: () -> Unit) {
     androidx.compose.material3.FloatingActionButton(
         onClick = onClick,
-        containerColor = androidx.compose.ui.graphics.Color(0xFF2196F3),
+        containerColor = IOSBlue,
         contentColor = androidx.compose.ui.graphics.Color.White,
         modifier = Modifier.size(40.dp)
     ) {
         androidx.compose.material3.Icon(
-            imageVector = Icons.Default.Create,
+            imageVector = Icons.Outlined.Create,
             contentDescription = "开始标注"
         )
     }
