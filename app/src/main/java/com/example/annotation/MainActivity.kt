@@ -643,7 +643,12 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding(), start = 24.dp, end = 24.dp, bottom = 24.dp)
+                .padding(
+                    top = paddingValues.calculateTopPadding() + 16.dp,
+                    start = 24.dp,
+                    end = 24.dp,
+                    bottom = 24.dp
+                )
         ) {
             Column(
                 modifier = Modifier
