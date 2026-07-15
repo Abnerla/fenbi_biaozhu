@@ -22,7 +22,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.annotation.model.StylusButtonAction
+import com.example.annotation.model.StylusMode
 import com.example.annotation.model.StylusProfile
+import com.example.annotation.service.OverlayService
 import com.example.annotation.ui.theme.iosSwitchColors
 import com.example.annotation.utils.PreferencesManager
 
@@ -33,7 +35,12 @@ fun StylusSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     var enabled by remember { mutableStateOf(preferencesManager.getStylusEnabled()) }
-    var profile by remember { mutableStateOf(preferencesManager.getStylusProfile()) }
+    var mode by remember { mutableStateOf(preferencesManager.getStylusMode()) }
+    var manualProfile by remember { mutableStateOf(preferencesManager.getManualStylusProfile()) }
+    var pickerStage by remember { mutableStateOf<StylusPickerStage?>(null) }
+    var nextPickerStage by remember { mutableStateOf<StylusPickerStage?>(null) }
+    var actionPicker by remember { mutableStateOf<StylusActionPicker?>(null) }
+    val detectedProfile = remember { StylusProfile.detectForDevice() }
     var primaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomPrimaryMask().toString()) }
     var secondaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomSecondaryMask().toString()) }
     val mappings = remember {
@@ -89,20 +96,18 @@ fun StylusSettingsScreen(
                     }
                 )
                 SettingsInsetDivider()
-                StylusChoiceRow(
-                    title = "设备档案",
-                    description = profile.description,
-                    selectedText = profile.displayName,
-                    options = StylusProfile.entries,
-                    optionText = { it.displayName },
-                    onSelected = {
-                        profile = it
-                        preferencesManager.setStylusProfile(it)
-                    }
+                StylusProfileRow(
+                    mode = mode,
+                    detail = when (mode) {
+                        StylusMode.AUTO -> detectedProfile.displayName
+                        StylusMode.MANUAL -> manualProfile.displayName
+                        StylusMode.CUSTOM -> "自定义按键掩码"
+                    },
+                    onClick = { pickerStage = StylusPickerStage.MODE }
                 )
             }
 
-            if (profile == StylusProfile.CUSTOM) {
+            if (mode == StylusMode.CUSTOM) {
                 InputSettingsSectionTitle("自定义按键掩码")
                 GroupedSettingsCard {
                     StylusMaskField(
@@ -127,28 +132,99 @@ fun StylusSettingsScreen(
 
             InputSettingsSectionTitle("主键功能")
             StylusActionGroup(
+                buttonName = "主键",
                 mappings = mappings,
-                preferencesManager = preferencesManager,
                 items = listOf(
                     "单击" to PreferencesManager.STYLUS_PRIMARY_SINGLE,
                     "双击" to PreferencesManager.STYLUS_PRIMARY_DOUBLE,
                     "长按" to PreferencesManager.STYLUS_PRIMARY_LONG
-                )
+                ),
+                onChooseAction = { pressName, key ->
+                    actionPicker = StylusActionPicker("主键", pressName, key)
+                }
             )
 
             InputSettingsSectionTitle("副键功能")
             StylusActionGroup(
+                buttonName = "副键",
                 mappings = mappings,
-                preferencesManager = preferencesManager,
                 items = listOf(
                     "单击" to PreferencesManager.STYLUS_SECONDARY_SINGLE,
                     "双击" to PreferencesManager.STYLUS_SECONDARY_DOUBLE,
                     "长按" to PreferencesManager.STYLUS_SECONDARY_LONG
-                )
+                ),
+                onChooseAction = { pressName, key ->
+                    actionPicker = StylusActionPicker("副键", pressName, key)
+                }
             )
         }
     }
+
+    if (pickerStage != null) {
+        DisposableEffect(Unit) {
+            OverlayService.setFloatingButtonSuppressed(true)
+            onDispose { OverlayService.setFloatingButtonSuppressed(false) }
+        }
+    }
+
+    when (pickerStage) {
+        StylusPickerStage.MODE -> IosSelectionDialog(
+            title = "选择设备档案",
+            options = StylusMode.entries,
+            selectedOption = mode,
+            optionText = { it.displayName },
+            onSelected = { selectedMode ->
+                mode = selectedMode
+                preferencesManager.setStylusMode(selectedMode)
+                nextPickerStage = if (selectedMode == StylusMode.MANUAL) {
+                    StylusPickerStage.BRAND
+                } else {
+                    null
+                }
+            },
+            onDismiss = {
+                pickerStage = nextPickerStage
+                nextPickerStage = null
+            },
+            suppressFloatingButton = false
+        )
+        StylusPickerStage.BRAND -> IosSelectionDialog(
+            title = "选择手写笔品牌",
+            options = StylusProfile.entries,
+            selectedOption = manualProfile,
+            optionText = { it.displayName },
+            onSelected = {
+                manualProfile = it
+                preferencesManager.setManualStylusProfile(it)
+            },
+            onDismiss = { pickerStage = null },
+            suppressFloatingButton = false
+        )
+        null -> Unit
+    }
+
+    actionPicker?.let { picker ->
+        IosSelectionDialog(
+            title = "${picker.buttonName}${picker.pressName}功能",
+            options = StylusButtonAction.entries,
+            selectedOption = mappings.getValue(picker.preferenceKey),
+            optionText = { it.displayName },
+            onSelected = {
+                mappings[picker.preferenceKey] = it
+                preferencesManager.setStylusButtonAction(picker.preferenceKey, it)
+            },
+            onDismiss = { actionPicker = null }
+        )
+    }
 }
+
+private enum class StylusPickerStage { MODE, BRAND }
+
+private data class StylusActionPicker(
+    val buttonName: String,
+    val pressName: String,
+    val preferenceKey: String
+)
 
 @Composable
 fun InputSettingsSectionTitle(title: String) {
@@ -182,42 +258,70 @@ private fun StylusSwitchRow(
 }
 
 @Composable
-private fun <T> StylusChoiceRow(
+private fun StylusProfileRow(
+    mode: StylusMode,
+    detail: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        InputSettingsRowIcon(Icons.Outlined.Build)
+        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+            Text("设备档案", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                mode.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    mode.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(
+                    Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun StylusActionRow(
     title: String,
     description: String,
     selectedText: String,
-    options: List<T>,
-    optionText: (T) -> String,
-    onSelected: (T) -> Unit
+    onClick: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            InputSettingsRowIcon(Icons.Outlined.Build)
-            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(selectedText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-            Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        InputSettingsRowIcon(Icons.Outlined.Build)
+        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(optionText(option)) },
-                    onClick = {
-                        onSelected(option)
-                        expanded = false
-                    }
-                )
-            }
-        }
+        Text(selectedText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null)
     }
 }
 
@@ -241,22 +345,18 @@ private fun StylusMaskField(title: String, value: String, onValueChange: (String
 
 @Composable
 private fun StylusActionGroup(
+    buttonName: String,
     mappings: MutableMap<String, StylusButtonAction>,
-    preferencesManager: PreferencesManager,
-    items: List<Pair<String, String>>
+    items: List<Pair<String, String>>,
+    onChooseAction: (pressName: String, preferenceKey: String) -> Unit
 ) {
     GroupedSettingsCard {
         items.forEachIndexed { index, (label, key) ->
-            StylusChoiceRow(
+            StylusActionRow(
                 title = label,
-                description = "手写笔按键$label",
+                description = "手写笔${buttonName}${label}",
                 selectedText = mappings.getValue(key).displayName,
-                options = StylusButtonAction.entries,
-                optionText = { it.displayName },
-                onSelected = {
-                    mappings[key] = it
-                    preferencesManager.setStylusButtonAction(key, it)
-                }
+                onClick = { onChooseAction(label, key) }
             )
             if (index != items.lastIndex) SettingsInsetDivider()
         }

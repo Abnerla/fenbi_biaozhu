@@ -4,8 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
 import com.example.annotation.model.StylusButtonAction
+import com.example.annotation.model.StylusButtonMasks
 import com.example.annotation.model.StylusButtonMappings
+import com.example.annotation.model.StylusMode
 import com.example.annotation.model.StylusProfile
+import com.example.annotation.model.migrateLegacyStylusProfile
+import com.example.annotation.model.resolveStylusButtonMasks
 
 enum class AppThemeMode {
     SYSTEM,
@@ -42,6 +46,8 @@ class PreferencesManager(context: Context) {
 
         private const val KEY_STYLUS_ENABLED = "stylus_enabled"
         private const val KEY_STYLUS_PROFILE = "stylus_profile"
+        private const val KEY_STYLUS_MODE = "stylus_mode"
+        private const val KEY_STYLUS_MANUAL_PROFILE = "stylus_manual_profile"
         private const val KEY_STYLUS_CUSTOM_PRIMARY_MASK = "stylus_custom_primary_mask"
         private const val KEY_STYLUS_CUSTOM_SECONDARY_MASK = "stylus_custom_secondary_mask"
         const val STYLUS_PRIMARY_SINGLE = "stylus_primary_single"
@@ -175,10 +181,34 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean(KEY_STYLUS_ENABLED, enabled).apply()
     }
 
-    fun getStylusProfile(): StylusProfile = enumPreference(KEY_STYLUS_PROFILE, StylusProfile.AUTO)
+    fun getStylusMode(): StylusMode {
+        migrateLegacyStylusSettingsIfNeeded()
+        return enumPreference(KEY_STYLUS_MODE, StylusMode.AUTO)
+    }
 
-    fun setStylusProfile(profile: StylusProfile) {
-        prefs.edit().putString(KEY_STYLUS_PROFILE, profile.name).apply()
+    fun setStylusMode(mode: StylusMode) {
+        prefs.edit().putString(KEY_STYLUS_MODE, mode.name).apply()
+    }
+
+    fun getManualStylusProfile(): StylusProfile {
+        migrateLegacyStylusSettingsIfNeeded()
+        return enumPreference(KEY_STYLUS_MANUAL_PROFILE, StylusProfile.ANDROID)
+    }
+
+    fun setManualStylusProfile(profile: StylusProfile) {
+        prefs.edit().putString(KEY_STYLUS_MANUAL_PROFILE, profile.name).apply()
+    }
+
+    fun getStylusButtonMasks(): StylusButtonMasks {
+        return resolveStylusButtonMasks(
+            mode = getStylusMode(),
+            detectedProfile = StylusProfile.detectForDevice().profile,
+            manualProfile = getManualStylusProfile(),
+            customMasks = StylusButtonMasks(
+                getStylusCustomPrimaryMask(),
+                getStylusCustomSecondaryMask()
+            )
+        )
     }
 
     fun getStylusCustomPrimaryMask(): Int = prefs.getInt(
@@ -233,6 +263,15 @@ class PreferencesManager(context: Context) {
 
     private fun stylusAction(key: String, default: StylusButtonAction): StylusButtonAction {
         return enumPreference(key, default)
+    }
+
+    private fun migrateLegacyStylusSettingsIfNeeded() {
+        if (prefs.contains(KEY_STYLUS_MODE)) return
+        val legacy = migrateLegacyStylusProfile(prefs.getString(KEY_STYLUS_PROFILE, null))
+        prefs.edit()
+            .putString(KEY_STYLUS_MODE, legacy.mode.name)
+            .putString(KEY_STYLUS_MANUAL_PROFILE, legacy.manualProfile.name)
+            .apply()
     }
 
     private inline fun <reified T : Enum<T>> enumPreference(key: String, default: T): T {

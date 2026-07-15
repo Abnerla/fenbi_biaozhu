@@ -33,7 +33,6 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.annotation.model.ColorPresets
 import com.example.annotation.utils.PreferencesManager
@@ -447,30 +446,10 @@ fun HighlighterSettingsScreen(
 
         // 错误提示对话框
         if (showErrorDialog) {
-            AlertDialog(
-                onDismissRequest = { showErrorDialog = false },
-                shape = RoundedCornerShape(16.dp),
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-                title = {
-                    Text(
-                        text = "无法添加颜色",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                text = {
-                    Text(
-                        text = errorMessage,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = { showErrorDialog = false }
-                    ) {
-                        Text("确定")
-                    }
-                }
+            IosMessageDialog(
+                title = "无法添加颜色",
+                message = errorMessage,
+                onDismiss = { showErrorDialog = false }
             )
         }
     }
@@ -840,6 +819,7 @@ private fun ColorPickerDialog(
 ) {
     val controller = rememberColorPickerController()
     var selectedColor by remember { mutableStateOf(Color.Red) }
+    var confirmedColor by remember { mutableStateOf<Color?>(null) }
 
     // RGB输入值
     var redValue by remember { mutableStateOf("255") }
@@ -911,20 +891,22 @@ private fun ColorPickerDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
-            )
+    IosDialog(
+        onDismiss = {
+            val color = confirmedColor
+            onDismiss()
+            color?.let(onColorSelected)
+        },
+        modifier = Modifier.fillMaxWidth(0.9f).widthIn(max = 400.dp)
+    ) { dismiss ->
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth()
+                .heightIn(max = 760.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
                 Text(
                     text = "选择颜色",
                     style = MaterialTheme.typography.titleLarge,
@@ -1106,15 +1088,17 @@ private fun ColorPickerDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = dismiss) {
                         Text("取消")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onColorSelected(selectedColor) }) {
+                    Button(onClick = {
+                        confirmedColor = selectedColor
+                        dismiss()
+                    }) {
                         Text("确定")
                     }
                 }
             }
         }
-    }
 }

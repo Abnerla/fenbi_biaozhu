@@ -73,19 +73,8 @@ fun DrawingCanvas(
 
     fun processStylusButtons(event: MotionEvent) {
         if (preferencesManager?.getStylusEnabled() != true) return
-        val configured = preferencesManager.getStylusProfile()
-        val resolved = configured.resolvedForDevice()
-        val primaryMask = if (configured == StylusProfile.CUSTOM) {
-            preferencesManager.getStylusCustomPrimaryMask()
-        } else {
-            resolved.primaryButtonMask
-        }
-        val secondaryMask = if (configured == StylusProfile.CUSTOM) {
-            preferencesManager.getStylusCustomSecondaryMask()
-        } else {
-            resolved.secondaryButtonMask
-        }
-        stylusDetector.process(event.buttonState, primaryMask, secondaryMask, event.eventTime)
+        val masks = preferencesManager.getStylusButtonMasks()
+        stylusDetector.process(event.buttonState, masks.primary, masks.secondary, event.eventTime)
     }
 
     fun centroid(event: MotionEvent): Offset {

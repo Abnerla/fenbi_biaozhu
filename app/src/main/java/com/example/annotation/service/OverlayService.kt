@@ -165,6 +165,10 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             activeInstance?.updateOverlayTouchable(touchable)
         }
 
+        fun setFloatingButtonSuppressed(suppressed: Boolean) {
+            activeInstance?.updateFloatingButtonSuppressed(suppressed)
+        }
+
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -486,6 +490,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      * 显示悬浮按钮
      */
     private fun showFloatingButton() {
+        if (floatingButtonSuppressed) return
         if (floatingButton != null) return
         if (!Settings.canDrawOverlays(this)) {
             android.util.Log.w("OverlayService", "showFloatingButton: 悬浮窗权限不可用")
@@ -780,19 +785,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
     private fun processStylusGenericMotion(event: MotionEvent) {
         if (!preferencesManager.getStylusEnabled()) return
-        val configured = preferencesManager.getStylusProfile()
-        val resolved = configured.resolvedForDevice()
-        val primaryMask = if (configured == StylusProfile.CUSTOM) {
-            preferencesManager.getStylusCustomPrimaryMask()
-        } else {
-            resolved.primaryButtonMask
-        }
-        val secondaryMask = if (configured == StylusProfile.CUSTOM) {
-            preferencesManager.getStylusCustomSecondaryMask()
-        } else {
-            resolved.secondaryButtonMask
-        }
-        stylusButtonDetector.process(event.buttonState, primaryMask, secondaryMask, event.eventTime)
+        val masks = preferencesManager.getStylusButtonMasks()
+        stylusButtonDetector.process(event.buttonState, masks.primary, masks.secondary, event.eventTime)
     }
 
     private fun executeStylusAction(action: StylusButtonAction) {
@@ -823,6 +817,17 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                 android.util.Log.w("OverlayService", "悬浮按钮已被系统移除", e)
             }
             floatingButton = null
+        }
+    }
+
+    private var floatingButtonSuppressed = false
+
+    private fun updateFloatingButtonSuppressed(suppressed: Boolean) {
+        floatingButtonSuppressed = suppressed
+        if (suppressed) {
+            removeFloatingButton()
+        } else if (!isAnnotationModeActive) {
+            showFloatingButton()
         }
     }
 

@@ -25,10 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.annotation.model.VersionInfo
-import kotlinx.coroutines.delay
 
 /**
  * 现代化更新对话框
@@ -46,62 +43,12 @@ fun UpdateDialog(
     onUpdate: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // 入场动画状态
-    var visible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        delay(50)
-        visible = true
-    }
-
-    // 缩放动画
-    val scale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.85f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "dialog_scale"
-    )
-
-    // 透明度动画
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(250),
-        label = "dialog_alpha"
-    )
-
-    Dialog(
-        onDismissRequest = {
-            if (!isForceUpdate) {
-                onDismiss()
-            }
-        },
-        properties = DialogProperties(
-            dismissOnBackPress = !isForceUpdate,
-            dismissOnClickOutside = !isForceUpdate
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .scale(scale)
-                .alpha(alpha),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(32.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-                tonalElevation = 0.dp,
-                shadowElevation = 3.dp
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+    IosDialog(
+        onDismiss = onDismiss,
+        dismissOnBackPress = !isForceUpdate,
+        dismissOnClickOutside = !isForceUpdate
+    ) { dismiss ->
+        Column(modifier = Modifier.fillMaxWidth()) {
                     // 顶部渐变区域（固定）
                     HeaderSection(isForceUpdate = isForceUpdate)
 
@@ -152,12 +99,9 @@ fun UpdateDialog(
                         isForceUpdate = isForceUpdate,
                         downloadProgress = downloadProgress,
                         onUpdate = onUpdate,
-                        onDismiss = onDismiss
+                        onDismiss = dismiss
                     )
                 }
-            }
-
-        }
     }
 }
 
@@ -175,7 +119,7 @@ private fun HeaderSection(isForceUpdate: Boolean) {
                     MaterialTheme.colorScheme.errorContainer
                 else
                     MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)
             ),
         contentAlignment = Alignment.Center
     ) {
