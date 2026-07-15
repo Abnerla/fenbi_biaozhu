@@ -181,6 +181,8 @@ class MainActivity : ComponentActivity() {
                             "settings" -> currentScreen = "main"
                             "toolbar_settings" -> currentScreen = "settings"
                             "highlighter_settings" -> currentScreen = "settings"
+                            "stylus_settings" -> currentScreen = "settings"
+                            "gesture_settings" -> currentScreen = "settings"
                             "permissions" -> currentScreen = "settings"
                             "other_settings" -> currentScreen = "settings"
                             "coming_soon" -> currentScreen = "main"
@@ -245,6 +247,12 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToHighlighterSettings = {
                                     currentScreen = "highlighter_settings"
                                 },
+                                onNavigateToStylusSettings = {
+                                    currentScreen = "stylus_settings"
+                                },
+                                onNavigateToGestureSettings = {
+                                    currentScreen = "gesture_settings"
+                                },
                                 onNavigateToPermissions = {
                                     currentScreen = "permissions"
                                 },
@@ -278,6 +286,14 @@ class MainActivity : ComponentActivity() {
                                 onNavigateBack = {
                                     currentScreen = "settings"
                                 }
+                            )
+                            "stylus_settings" -> StylusSettingsScreen(
+                                preferencesManager = preferencesManager,
+                                onNavigateBack = { currentScreen = "settings" }
+                            )
+                            "gesture_settings" -> GestureSettingsScreen(
+                                preferencesManager = preferencesManager,
+                                onNavigateBack = { currentScreen = "settings" }
                             )
                             "permissions" -> PermissionsScreen(
                                 permissionStatus = permissionStatus,

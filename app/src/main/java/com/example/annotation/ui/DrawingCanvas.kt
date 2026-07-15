@@ -1,27 +1,51 @@
 package com.example.annotation.ui
 
+import android.view.MotionEvent
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
-import com.example.annotation.model.DrawingTool
+import com.example.annotation.model.*
+import com.example.annotation.utils.PreferencesManager
+import com.example.annotation.utils.StylusButtonGestureDetector
+import kotlin.math.hypot
 
-/**
- * 绘图画布组件
- */
+private class CanvasInputState {
+    var drawing = false
+    var maxPointerCount = 0
+    var downTime = 0L
+    var startCentroid = Offset.Zero
+    var lastCentroid = Offset.Zero
+    var rawOffset = Offset.Zero
+
+    fun reset() {
+        drawing = false
+        maxPointerCount = 0
+        downTime = 0L
+        startCentroid = Offset.Zero
+        lastCentroid = Offset.Zero
+        rawOffset = Offset.Zero
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DrawingCanvas(
     drawingEngine: DrawingEngine,
     modifier: Modifier = Modifier,
-    onDoubleFingerTap: () -> Unit = {},
+    preferencesManager: PreferencesManager? = null,
+    onTwoFingerTap: () -> Unit = {},
+    onThreeFingerTap: () -> Unit = {},
+    onTwoFingerSwipe: (Offset, Offset, Long) -> Unit = { _, _, _ -> },
+    onStylusAction: (StylusButtonAction) -> Unit = {},
     onDrawingStart: () -> Unit = {}
 ) {
     val currentTool by drawingEngine.currentTool.collectAsState()
@@ -29,237 +53,211 @@ fun DrawingCanvas(
     val highlighterConfig by drawingEngine.highlighterConfig.collectAsState()
     val eraserConfig by drawingEngine.eraserConfig.collectAsState()
     val eraserPosition by drawingEngine.currentEraserPosition.collectAsState()
+    var currentDrawingPath by remember { mutableStateOf<List<PathPoint>>(emptyList()) }
+    val inputState = remember { CanvasInputState() }
+    val density = LocalDensity.current
+    val tapSlop = with(density) { 24.dp.toPx() }
+    val swipeThreshold = with(density) { 48.dp.toPx() }
+    val latestStylusAction by rememberUpdatedState(onStylusAction)
+    val stylusDetector = remember {
+        StylusButtonGestureDetector { button, pressType ->
+            val action = preferencesManager?.getStylusButtonMappings()?.actionFor(button, pressType)
+                ?: StylusButtonAction.NONE
+            latestStylusAction(action)
+        }
+    }
 
-    var currentDrawingPath by remember { mutableStateOf<List<com.example.annotation.model.PathPoint>>(emptyList()) }
+    DisposableEffect(stylusDetector) {
+        onDispose { stylusDetector.dispose() }
+    }
 
-    // 双指双击检测状态
-    var twoFingerTapCount by remember { mutableStateOf(0) }
-    var lastTwoFingerTapTime by remember { mutableStateOf(0L) }
-    var lastPointerCount by remember { mutableStateOf(0) }
+    fun processStylusButtons(event: MotionEvent) {
+        if (preferencesManager?.getStylusEnabled() != true) return
+        val configured = preferencesManager.getStylusProfile()
+        val resolved = configured.resolvedForDevice()
+        val primaryMask = if (configured == StylusProfile.CUSTOM) {
+            preferencesManager.getStylusCustomPrimaryMask()
+        } else {
+            resolved.primaryButtonMask
+        }
+        val secondaryMask = if (configured == StylusProfile.CUSTOM) {
+            preferencesManager.getStylusCustomSecondaryMask()
+        } else {
+            resolved.secondaryButtonMask
+        }
+        stylusDetector.process(event.buttonState, primaryMask, secondaryMask, event.eventTime)
+    }
+
+    fun centroid(event: MotionEvent): Offset {
+        var x = 0f
+        var y = 0f
+        for (index in 0 until event.pointerCount) {
+            x += event.getX(index)
+            y += event.getY(index)
+        }
+        return Offset(x / event.pointerCount, y / event.pointerCount)
+    }
+
+    fun handleMotionEvent(event: MotionEvent): Boolean {
+        processStylusButtons(event)
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                inputState.reset()
+                inputState.maxPointerCount = 1
+                inputState.downTime = event.eventTime
+                inputState.startCentroid = Offset(event.x, event.y)
+                inputState.lastCentroid = inputState.startCentroid
+                inputState.rawOffset = Offset(event.rawX - event.x, event.rawY - event.y)
+                inputState.drawing = true
+                drawingEngine.startDrawing(Offset(event.x, event.y), event.pressure.coerceIn(0f, 1f))
+                currentDrawingPath = drawingEngine.getCurrentDrawingPath()
+                onDrawingStart()
+            }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                inputState.maxPointerCount = maxOf(inputState.maxPointerCount, event.pointerCount)
+                if (inputState.drawing) {
+                    drawingEngine.cancelDrawing()
+                    currentDrawingPath = emptyList()
+                    inputState.drawing = false
+                }
+                val center = centroid(event)
+                if (inputState.maxPointerCount == event.pointerCount) inputState.startCentroid = center
+                inputState.lastCentroid = center
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                inputState.maxPointerCount = maxOf(inputState.maxPointerCount, event.pointerCount)
+                if (inputState.maxPointerCount >= 2) {
+                    inputState.lastCentroid = centroid(event)
+                } else if (inputState.drawing) {
+                    drawingEngine.continueDrawing(
+                        Offset(event.x, event.y),
+                        event.pressure.coerceIn(0f, 1f)
+                    )
+                    currentDrawingPath = drawingEngine.getCurrentDrawingPath()
+                }
+            }
+
+            MotionEvent.ACTION_UP -> {
+                val duration = (event.eventTime - inputState.downTime).coerceAtLeast(1L)
+                if (inputState.maxPointerCount == 1 && inputState.drawing) {
+                    drawingEngine.endDrawing()
+                    currentDrawingPath = emptyList()
+                } else {
+                    val distance = hypot(
+                        inputState.lastCentroid.x - inputState.startCentroid.x,
+                        inputState.lastCentroid.y - inputState.startCentroid.y
+                    )
+                    val isTap = duration <= 320L && distance <= tapSlop
+                    when {
+                        inputState.maxPointerCount == 2 && isTap &&
+                            preferencesManager?.getTwoFingerTapUndoEnabled() != false -> onTwoFingerTap()
+
+                        inputState.maxPointerCount == 3 && isTap &&
+                            preferencesManager?.getThreeFingerTapRedoEnabled() != false -> onThreeFingerTap()
+
+                        inputState.maxPointerCount == 2 && distance >= swipeThreshold &&
+                            preferencesManager?.getTwoFingerPageMoveEnabled() == true -> {
+                            onTwoFingerSwipe(
+                                inputState.startCentroid + inputState.rawOffset,
+                                inputState.lastCentroid + inputState.rawOffset,
+                                duration
+                            )
+                        }
+                    }
+                }
+                inputState.reset()
+            }
+
+            MotionEvent.ACTION_CANCEL -> {
+                drawingEngine.cancelDrawing()
+                currentDrawingPath = emptyList()
+                inputState.reset()
+            }
+        }
+        return true
+    }
 
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        val pressure = 1f // 默认压感，将在后续优化中处理真实压感
-                        drawingEngine.startDrawing(offset, pressure)
-                        currentDrawingPath = drawingEngine.getCurrentDrawingPath()
-                        // 触发绘制开始回调
-                        onDrawingStart()
-                    },
-                    onDrag = { change: PointerInputChange, _ ->
-                        val pressure = change.pressure
-                        drawingEngine.continueDrawing(change.position, pressure)
-                        currentDrawingPath = drawingEngine.getCurrentDrawingPath()
-                        change.consume()
-                    },
-                    onDragEnd = {
-                        drawingEngine.endDrawing()
-                        currentDrawingPath = emptyList()
-                    }
-                )
-            }
-            .pointerInput(Unit) {
-                // 检测双指双击
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val currentPointerCount = event.changes.size
-
-                        // 检测从0或1个手指变为2个手指（双指按下）
-                        if (lastPointerCount < 2 && currentPointerCount == 2) {
-                            val currentTime = System.currentTimeMillis()
-
-                            // 如果距离上次双指按下不到500ms，说明是第二次点击
-                            if (currentTime - lastTwoFingerTapTime < 500) {
-                                twoFingerTapCount++
-
-                                // 如果是第二次双指点击，触发撤销
-                                if (twoFingerTapCount >= 2) {
-                                    onDoubleFingerTap()
-                                    twoFingerTapCount = 0
-                                    lastTwoFingerTapTime = 0L
-                                }
-                            } else {
-                                // 重新开始计数
-                                twoFingerTapCount = 1
-                                lastTwoFingerTapTime = currentTime
-                            }
-                        }
-
-                        // 如果超过500ms没有第二次点击，重置计数
-                        if (twoFingerTapCount > 0 && System.currentTimeMillis() - lastTwoFingerTapTime > 500) {
-                            twoFingerTapCount = 0
-                            lastTwoFingerTapTime = 0L
-                        }
-
-                        lastPointerCount = currentPointerCount
-                    }
-                }
-            }
+            .pointerInteropFilter { event -> handleMotionEvent(event) }
     ) {
-        // 绘制所有已完成的路径
         drawingEngine.paths.forEach { path ->
             when (path.tool) {
-                DrawingTool.PEN -> {
-                    path.penConfig?.let { config ->
-                        drawPath(
-                            path = path,
-                            color = config.color,
-                            baseWidth = config.strokeWidth,
-                            alpha = 1f, // 画笔完全不透明
-                            drawingEngine = drawingEngine,
-                            isAntiAlias = true
-                        )
-                    }
+                DrawingTool.PEN -> path.penConfig?.let { config ->
+                    drawAnnotationPath(path, config.color, config.strokeWidth, 1f)
                 }
-                DrawingTool.HIGHLIGHTER -> {
-                    path.highlighterConfig?.let { config ->
-                        drawPath(
-                            path = path,
-                            color = config.color,
-                            baseWidth = config.strokeWidth,
-                            alpha = config.alpha,
-                            drawingEngine = drawingEngine,
-                            isAntiAlias = true,
-                            blendMode = BlendMode.SrcOver // 使用正常混合模式以在透明背景上显示
-                        )
-                    }
+                DrawingTool.HIGHLIGHTER -> path.highlighterConfig?.let { config ->
+                    drawAnnotationPath(path, config.color, config.strokeWidth, config.alpha)
                 }
-                DrawingTool.ERASER -> {
-                    // 橡皮擦不再保存为路径，所以这个分支不会被执行
-                }
+                DrawingTool.ERASER -> Unit
             }
         }
 
-        // 绘制当前正在绘制的路径（仅画笔和荧光笔）
         if (currentDrawingPath.isNotEmpty() && currentTool != DrawingTool.ERASER) {
-            val tempPath = when (currentTool) {
-                DrawingTool.PEN -> com.example.annotation.model.DrawingPath(
-                    tool = DrawingTool.PEN,
-                    points = currentDrawingPath,
-                    penConfig = penConfig
-                )
-                DrawingTool.HIGHLIGHTER -> com.example.annotation.model.DrawingPath(
-                    tool = DrawingTool.HIGHLIGHTER,
-                    points = currentDrawingPath,
+            val temporaryPath = when (currentTool) {
+                DrawingTool.PEN -> DrawingPath(DrawingTool.PEN, currentDrawingPath, penConfig = penConfig)
+                DrawingTool.HIGHLIGHTER -> DrawingPath(
+                    DrawingTool.HIGHLIGHTER,
+                    currentDrawingPath,
                     highlighterConfig = highlighterConfig
                 )
                 DrawingTool.ERASER -> null
             }
-
-            tempPath?.let { path ->
+            temporaryPath?.let { path ->
                 when (currentTool) {
-                    DrawingTool.PEN -> {
-                        drawPath(
-                            path = path,
-                            color = penConfig.color,
-                            baseWidth = penConfig.strokeWidth,
-                            alpha = 1f, // 画笔完全不透明
-                            drawingEngine = drawingEngine,
-                            isAntiAlias = true
-                        )
-                    }
-                    DrawingTool.HIGHLIGHTER -> {
-                        drawPath(
-                            path = path,
-                            color = highlighterConfig.color,
-                            baseWidth = highlighterConfig.strokeWidth,
-                            alpha = highlighterConfig.alpha,
-                            drawingEngine = drawingEngine,
-                            isAntiAlias = true,
-                            blendMode = BlendMode.SrcOver // 使用正常混合模式以在透明背景上显示
-                        )
-                    }
-                    DrawingTool.ERASER -> {
-                        // 不绘制橡皮擦路径
-                    }
+                    DrawingTool.PEN -> drawAnnotationPath(path, penConfig.color, penConfig.strokeWidth, 1f)
+                    DrawingTool.HIGHLIGHTER -> drawAnnotationPath(
+                        path,
+                        highlighterConfig.color,
+                        highlighterConfig.strokeWidth,
+                        highlighterConfig.alpha
+                    )
+                    DrawingTool.ERASER -> Unit
                 }
             }
         }
 
-        // 绘制橡皮擦圆圈指示器
         eraserPosition?.let { position ->
             val radius = eraserConfig.size / 2
-            drawCircle(
-                color = Color.Gray.copy(alpha = 0.5f),
-                radius = radius,
-                center = position,
-                style = Stroke(width = 2f)
-            )
-            // 绘制十字准星
-            drawLine(
-                color = Color.Gray.copy(alpha = 0.5f),
-                start = Offset(position.x - 10f, position.y),
-                end = Offset(position.x + 10f, position.y),
-                strokeWidth = 1f
-            )
-            drawLine(
-                color = Color.Gray.copy(alpha = 0.5f),
-                start = Offset(position.x, position.y - 10f),
-                end = Offset(position.x, position.y + 10f),
-                strokeWidth = 1f
-            )
+            drawCircle(Color.Gray.copy(alpha = 0.5f), radius, position, style = Stroke(width = 2f))
+            drawLine(Color.Gray.copy(alpha = 0.5f), Offset(position.x - 10f, position.y), Offset(position.x + 10f, position.y), 1f)
+            drawLine(Color.Gray.copy(alpha = 0.5f), Offset(position.x, position.y - 10f), Offset(position.x, position.y + 10f), 1f)
         }
     }
 }
 
-/**
- * 绘制路径的扩展函数
- */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPath(
-    path: com.example.annotation.model.DrawingPath,
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAnnotationPath(
+    drawingPath: DrawingPath,
     color: Color,
-    baseWidth: Float,
-    alpha: Float,
-    drawingEngine: DrawingEngine,
-    isAntiAlias: Boolean = true,
-    blendMode: BlendMode = BlendMode.SrcOver
+    width: Float,
+    alpha: Float
 ) {
-    if (path.points.size < 2) return
-
-    val drawPath = Path()
-    val firstPoint = path.points.first()
-    drawPath.moveTo(firstPoint.offset.x, firstPoint.offset.y)
-
-    // 使用贝塞尔曲线平滑路径
-    for (i in 1 until path.points.size) {
-        val prevPoint = path.points[i - 1]
-        val currentPoint = path.points[i]
-
-        if (i < path.points.size - 1) {
-            val nextPoint = path.points[i + 1]
-            val controlPoint = Offset(
-                (prevPoint.offset.x + currentPoint.offset.x) / 2,
-                (prevPoint.offset.y + currentPoint.offset.y) / 2
-            )
-            drawPath.quadraticTo(
-                prevPoint.offset.x,
-                prevPoint.offset.y,
-                controlPoint.x,
-                controlPoint.y
-            )
-        } else {
-            drawPath.lineTo(currentPoint.offset.x, currentPoint.offset.y)
+    if (drawingPath.points.size < 2) return
+    val path = Path().apply {
+        val first = drawingPath.points.first().offset
+        moveTo(first.x, first.y)
+        for (index in 1 until drawingPath.points.size) {
+            val previous = drawingPath.points[index - 1].offset
+            val current = drawingPath.points[index].offset
+            if (index < drawingPath.points.lastIndex) {
+                quadraticTo(
+                    previous.x,
+                    previous.y,
+                    (previous.x + current.x) / 2,
+                    (previous.y + current.y) / 2
+                )
+            } else {
+                lineTo(current.x, current.y)
+            }
         }
     }
-
-    // 使用基础宽度，不再应用压感影响（用户期望看到设定的固定粗细）
-    val adjustedWidth = baseWidth
-
-    // 使用固定透明度，不再受压感影响
-    val adjustedAlpha = alpha
-
     drawPath(
-        path = drawPath,
-        color = color.copy(alpha = adjustedAlpha),
-        style = Stroke(
-            width = adjustedWidth,
-            cap = StrokeCap.Round,
-            join = StrokeJoin.Round
-        ),
-        blendMode = blendMode
+        path = path,
+        color = color.copy(alpha = alpha),
+        style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        blendMode = BlendMode.SrcOver
     )
 }

@@ -44,12 +44,16 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.annotation.MainActivity
 import com.example.annotation.R
 import com.example.annotation.drawing.DrawingEngine
+import com.example.annotation.model.DrawingTool
+import com.example.annotation.model.StylusButtonAction
+import com.example.annotation.model.StylusProfile
 import com.example.annotation.ui.OverlayContent
 import com.example.annotation.ui.theme.AnnotationTheme
 import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
+import com.example.annotation.utils.StylusButtonGestureDetector
 import android.widget.Toast
 import com.example.annotation.ScreenCapturePermissionActivity
 
@@ -60,10 +64,17 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
     private lateinit var windowManager: WindowManager
     private var overlayView: ComposeView? = null
+    private var overlayParams: WindowManager.LayoutParams? = null
     private var floatingButton: ComposeView? = null
     private val drawingEngine = DrawingEngine()
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var screenCaptureManager: ScreenCaptureManager
+    private val stylusButtonDetector by lazy {
+        StylusButtonGestureDetector { button, pressType ->
+            val action = preferencesManager.getStylusButtonMappings().actionFor(button, pressType)
+            executeStylusAction(action)
+        }
+    }
     private val themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
 
     // 工具栏可见性状态 - 用于截图时隐藏UI
@@ -148,6 +159,12 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         var isAnnotationModeActive: Boolean = false
             private set
 
+        private var activeInstance: OverlayService? = null
+
+        fun setOverlayTouchable(touchable: Boolean) {
+            activeInstance?.updateOverlayTouchable(touchable)
+        }
+
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -178,6 +195,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     override fun onCreate() {
         super.onCreate()
         isRunning = true
+        activeInstance = this
 
         // 初始化 PreferencesManager
         preferencesManager = PreferencesManager(this)
@@ -332,6 +350,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         super.onDestroy()
         isRunning = false
         isAnnotationModeActive = false
+        activeInstance = null
 
         // 注销设置变更监听器
         val prefs = getSharedPreferences("annotation_preferences", Context.MODE_PRIVATE)
@@ -339,6 +358,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // 停止屏幕捕获（但不清除权限信息，以便下次使用）
         screenCaptureManager.stopMediaProjection()
+        stylusButtonDetector.dispose()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
 
@@ -671,11 +691,16 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
         }
+        overlayParams = params
 
         overlayView = ComposeView(this).apply {
             // 设置Lifecycle和SavedStateRegistry
             setViewTreeLifecycleOwner(this@OverlayService)
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
+            setOnGenericMotionListener { _, event ->
+                processStylusGenericMotion(event)
+                false
+            }
 
             setContent {
                 AnnotationTheme(themeMode = themeModeState.value) {
@@ -720,6 +745,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         } catch (e: Exception) {
             android.util.Log.e("OverlayService", "添加标注悬浮层失败", e)
             overlayView = null
+            overlayParams = null
             isAnnotationModeActive = false
             showFloatingButton()
         }
@@ -737,7 +763,53 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             }
             overlayView = null
         }
+        overlayParams = null
         isAnnotationModeActive = false
+    }
+
+    private fun updateOverlayTouchable(touchable: Boolean) {
+        val view = overlayView ?: return
+        val params = overlayParams ?: return
+        params.flags = if (touchable) {
+            params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+        } else {
+            params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun processStylusGenericMotion(event: MotionEvent) {
+        if (!preferencesManager.getStylusEnabled()) return
+        val configured = preferencesManager.getStylusProfile()
+        val resolved = configured.resolvedForDevice()
+        val primaryMask = if (configured == StylusProfile.CUSTOM) {
+            preferencesManager.getStylusCustomPrimaryMask()
+        } else {
+            resolved.primaryButtonMask
+        }
+        val secondaryMask = if (configured == StylusProfile.CUSTOM) {
+            preferencesManager.getStylusCustomSecondaryMask()
+        } else {
+            resolved.secondaryButtonMask
+        }
+        stylusButtonDetector.process(event.buttonState, primaryMask, secondaryMask, event.eventTime)
+    }
+
+    private fun executeStylusAction(action: StylusButtonAction) {
+        when (action) {
+            StylusButtonAction.NONE -> Unit
+            StylusButtonAction.PEN -> drawingEngine.setTool(DrawingTool.PEN)
+            StylusButtonAction.HIGHLIGHTER -> drawingEngine.setTool(DrawingTool.HIGHLIGHTER)
+            StylusButtonAction.ERASER -> drawingEngine.setTool(DrawingTool.ERASER)
+            StylusButtonAction.UNDO -> drawingEngine.undo()
+            StylusButtonAction.REDO -> drawingEngine.redo()
+            StylusButtonAction.CLEAR -> drawingEngine.clearAll()
+            StylusButtonAction.SCREENSHOT -> handleScreenshot()
+            StylusButtonAction.EXIT_ANNOTATION -> {
+                removeOverlay()
+                showFloatingButton()
+            }
+        }
     }
 
     /**

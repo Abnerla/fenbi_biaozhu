@@ -52,7 +52,9 @@ class DrawingEngine {
     // 新设计：historyStack 保存每次操作后的完整状态
     // 索引0是初始空白状态，索引1是第一次操作后的状态，依此类推
     private val historyStack = mutableListOf<List<DrawingPath>>()
+    private val redoStack = mutableListOf<List<DrawingPath>>()
     private val maxHistorySize = 50
+    private var eraserChangedCurrentStroke = false
 
     init {
         // 初始化：保存空白状态作为第一个历史记录
@@ -116,7 +118,7 @@ class DrawingEngine {
             // 橡皮擦模式：清空已擦除路径集合，开始新的擦除划动
             erasedPathsInCurrentStroke.clear()
             // 在开始擦除前，先保存当前状态（只保存一次）
-            saveToHistory()
+            eraserChangedCurrentStroke = false
             _currentEraserPosition.value = offset
             erasePathsAt(offset)
         } else {
@@ -152,6 +154,8 @@ class DrawingEngine {
             // 橡皮擦模式：清除橡皮擦位置指示和已擦除路径集合
             _currentEraserPosition.value = null
             erasedPathsInCurrentStroke.clear()
+            if (eraserChangedCurrentStroke) saveToHistory()
+            eraserChangedCurrentStroke = false
             return
         }
 
@@ -202,6 +206,7 @@ class DrawingEngine {
         // 如果有路径被擦除，直接删除（历史已在 startDrawing 中保存）
         if (pathsToRemove.isNotEmpty()) {
             paths.removeAll(pathsToRemove)
+            eraserChangedCurrentStroke = true
         }
     }
 
@@ -296,7 +301,7 @@ class DrawingEngine {
         }
 
         // 移除当前状态
-        historyStack.removeAt(historyStack.size - 1)
+        redoStack.add(historyStack.removeAt(historyStack.size - 1))
 
         // 恢复到上一个状态（historyStack 中的最后一个）
         val previousState = historyStack.last()
@@ -304,12 +309,20 @@ class DrawingEngine {
         paths.addAll(previousState)
     }
 
+    fun redo() {
+        if (redoStack.isEmpty()) return
+        val nextState = redoStack.removeAt(redoStack.size - 1)
+        historyStack.add(nextState)
+        paths.clear()
+        paths.addAll(nextState)
+    }
+
     /**
      * 清空所有绘制内容
      */
     fun clearAll() {
         // 清空前保存当前状态
-        saveToHistory()
+        if (paths.isEmpty()) return
         paths.clear()
         currentPath.clear()
         // 清空后也保存新的空白状态
@@ -321,12 +334,22 @@ class DrawingEngine {
      * 新逻辑：保存当前 paths 的完整快照
      */
     private fun saveToHistory() {
+        val snapshot = paths.toList()
+        if (historyStack.lastOrNull() == snapshot) return
+        redoStack.clear()
         // 限制历史记录数量
         if (historyStack.size >= maxHistorySize) {
             historyStack.removeAt(0)
         }
         // 保存当前状态的深拷贝
-        historyStack.add(paths.toList())
+        historyStack.add(snapshot)
+    }
+
+    fun cancelDrawing() {
+        currentPath.clear()
+        _currentEraserPosition.value = null
+        erasedPathsInCurrentStroke.clear()
+        eraserChangedCurrentStroke = false
     }
 
     /**

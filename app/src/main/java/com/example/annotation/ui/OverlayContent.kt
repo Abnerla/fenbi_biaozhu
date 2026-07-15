@@ -15,6 +15,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
+import com.example.annotation.model.DrawingTool
+import com.example.annotation.model.StylusButtonAction
+import com.example.annotation.service.GestureForwardingAccessibilityService
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -162,9 +165,33 @@ fun OverlayContent(
         // 绘图画布 - 全屏
         DrawingCanvas(
             drawingEngine = drawingEngine,
-            onDoubleFingerTap = {
-                // 双指双击撤销
+            preferencesManager = preferencesManager,
+            onTwoFingerTap = {
+                // 双指单击撤销
                 drawingEngine.undo()
+            },
+            onThreeFingerTap = drawingEngine::redo,
+            onTwoFingerSwipe = { start, end, duration ->
+                GestureForwardingAccessibilityService.forwardSwipe(
+                    start.x,
+                    start.y,
+                    end.x,
+                    end.y,
+                    duration
+                )
+            },
+            onStylusAction = { action ->
+                when (action) {
+                    StylusButtonAction.NONE -> Unit
+                    StylusButtonAction.PEN -> drawingEngine.setTool(DrawingTool.PEN)
+                    StylusButtonAction.HIGHLIGHTER -> drawingEngine.setTool(DrawingTool.HIGHLIGHTER)
+                    StylusButtonAction.ERASER -> drawingEngine.setTool(DrawingTool.ERASER)
+                    StylusButtonAction.UNDO -> drawingEngine.undo()
+                    StylusButtonAction.REDO -> drawingEngine.redo()
+                    StylusButtonAction.CLEAR -> drawingEngine.clearAll()
+                    StylusButtonAction.SCREENSHOT -> onScreenshot()
+                    StylusButtonAction.EXIT_ANNOTATION -> onExit()
+                }
             },
             onDrawingStart = {
                 // 如果启用了自动折叠，且二级菜单正在显示，则折叠它

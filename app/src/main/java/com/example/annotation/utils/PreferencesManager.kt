@@ -3,6 +3,9 @@ package com.example.annotation.utils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
+import com.example.annotation.model.StylusButtonAction
+import com.example.annotation.model.StylusButtonMappings
+import com.example.annotation.model.StylusProfile
 
 enum class AppThemeMode {
     SYSTEM,
@@ -36,6 +39,30 @@ class PreferencesManager(context: Context) {
 
         private const val KEY_ALLOW_EXTERNAL_ANNOTATION_CONTROL = "allow_external_annotation_control"
         private const val KEY_ALLOW_EXTERNAL_FLOATING_WINDOW_CONTROL = "allow_external_floating_window_control"
+
+        private const val KEY_STYLUS_ENABLED = "stylus_enabled"
+        private const val KEY_STYLUS_PROFILE = "stylus_profile"
+        private const val KEY_STYLUS_CUSTOM_PRIMARY_MASK = "stylus_custom_primary_mask"
+        private const val KEY_STYLUS_CUSTOM_SECONDARY_MASK = "stylus_custom_secondary_mask"
+        const val STYLUS_PRIMARY_SINGLE = "stylus_primary_single"
+        const val STYLUS_PRIMARY_DOUBLE = "stylus_primary_double"
+        const val STYLUS_PRIMARY_LONG = "stylus_primary_long"
+        const val STYLUS_SECONDARY_SINGLE = "stylus_secondary_single"
+        const val STYLUS_SECONDARY_DOUBLE = "stylus_secondary_double"
+        const val STYLUS_SECONDARY_LONG = "stylus_secondary_long"
+
+        private val stylusActionKeys = setOf(
+            STYLUS_PRIMARY_SINGLE,
+            STYLUS_PRIMARY_DOUBLE,
+            STYLUS_PRIMARY_LONG,
+            STYLUS_SECONDARY_SINGLE,
+            STYLUS_SECONDARY_DOUBLE,
+            STYLUS_SECONDARY_LONG
+        )
+
+        private const val KEY_GESTURE_TWO_FINGER_UNDO = "gesture_two_finger_undo"
+        private const val KEY_GESTURE_THREE_FINGER_REDO = "gesture_three_finger_redo"
+        private const val KEY_GESTURE_TWO_FINGER_PAGE_MOVE = "gesture_two_finger_page_move"
 
         // 自定义画笔颜色键
         private const val KEY_CUSTOM_PEN_COLOR_1 = "custom_pen_color_1"
@@ -140,6 +167,77 @@ class PreferencesManager(context: Context) {
 
     fun setAllowExternalFloatingWindowControl(allow: Boolean) {
         prefs.edit().putBoolean(KEY_ALLOW_EXTERNAL_FLOATING_WINDOW_CONTROL, allow).apply()
+    }
+
+    fun getStylusEnabled(): Boolean = prefs.getBoolean(KEY_STYLUS_ENABLED, true)
+
+    fun setStylusEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_STYLUS_ENABLED, enabled).apply()
+    }
+
+    fun getStylusProfile(): StylusProfile = enumPreference(KEY_STYLUS_PROFILE, StylusProfile.AUTO)
+
+    fun setStylusProfile(profile: StylusProfile) {
+        prefs.edit().putString(KEY_STYLUS_PROFILE, profile.name).apply()
+    }
+
+    fun getStylusCustomPrimaryMask(): Int = prefs.getInt(
+        KEY_STYLUS_CUSTOM_PRIMARY_MASK,
+        android.view.MotionEvent.BUTTON_STYLUS_PRIMARY
+    )
+
+    fun setStylusCustomPrimaryMask(mask: Int) {
+        prefs.edit().putInt(KEY_STYLUS_CUSTOM_PRIMARY_MASK, mask.coerceAtLeast(1)).apply()
+    }
+
+    fun getStylusCustomSecondaryMask(): Int = prefs.getInt(
+        KEY_STYLUS_CUSTOM_SECONDARY_MASK,
+        android.view.MotionEvent.BUTTON_STYLUS_SECONDARY
+    )
+
+    fun setStylusCustomSecondaryMask(mask: Int) {
+        prefs.edit().putInt(KEY_STYLUS_CUSTOM_SECONDARY_MASK, mask.coerceAtLeast(1)).apply()
+    }
+
+    fun getStylusButtonMappings(): StylusButtonMappings = StylusButtonMappings(
+        primarySingle = stylusAction(STYLUS_PRIMARY_SINGLE, StylusButtonAction.ERASER),
+        primaryDouble = stylusAction(STYLUS_PRIMARY_DOUBLE, StylusButtonAction.UNDO),
+        primaryLong = stylusAction(STYLUS_PRIMARY_LONG, StylusButtonAction.REDO),
+        secondarySingle = stylusAction(STYLUS_SECONDARY_SINGLE, StylusButtonAction.PEN),
+        secondaryDouble = stylusAction(STYLUS_SECONDARY_DOUBLE, StylusButtonAction.HIGHLIGHTER),
+        secondaryLong = stylusAction(STYLUS_SECONDARY_LONG, StylusButtonAction.SCREENSHOT)
+    )
+
+    fun setStylusButtonAction(key: String, action: StylusButtonAction) {
+        require(key in stylusActionKeys) { "Unknown stylus action key: $key" }
+        prefs.edit().putString(key, action.name).apply()
+    }
+
+    fun getTwoFingerTapUndoEnabled(): Boolean = prefs.getBoolean(KEY_GESTURE_TWO_FINGER_UNDO, true)
+
+    fun setTwoFingerTapUndoEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GESTURE_TWO_FINGER_UNDO, enabled).apply()
+    }
+
+    fun getThreeFingerTapRedoEnabled(): Boolean = prefs.getBoolean(KEY_GESTURE_THREE_FINGER_REDO, true)
+
+    fun setThreeFingerTapRedoEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GESTURE_THREE_FINGER_REDO, enabled).apply()
+    }
+
+    fun getTwoFingerPageMoveEnabled(): Boolean = prefs.getBoolean(KEY_GESTURE_TWO_FINGER_PAGE_MOVE, false)
+
+    fun setTwoFingerPageMoveEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GESTURE_TWO_FINGER_PAGE_MOVE, enabled).apply()
+    }
+
+    private fun stylusAction(key: String, default: StylusButtonAction): StylusButtonAction {
+        return enumPreference(key, default)
+    }
+
+    private inline fun <reified T : Enum<T>> enumPreference(key: String, default: T): T {
+        val saved = prefs.getString(key, default.name)
+        return enumValues<T>().firstOrNull { it.name == saved } ?: default
     }
 
     /**

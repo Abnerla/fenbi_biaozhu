@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.sp
 fun SettingsScreen(
     onNavigateToToolbarSettings: () -> Unit = {},
     onNavigateToHighlighterSettings: () -> Unit = {},
+    onNavigateToStylusSettings: () -> Unit = {},
+    onNavigateToGestureSettings: () -> Unit = {},
     onNavigateToPermissions: () -> Unit = {},
     onNavigateToOtherSettings: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
@@ -104,6 +106,10 @@ fun SettingsScreen(
                 SettingEntryRow("工具栏设置", "调整工具栏的属性", Icons.Outlined.Build, onNavigateToToolbarSettings)
                 SettingsInsetDivider()
                 SettingEntryRow("笔设置", "调整笔的细节", Icons.Outlined.Edit, onNavigateToHighlighterSettings)
+                SettingsInsetDivider()
+                SettingEntryRow("手写笔", "品牌兼容与按键功能", Icons.Outlined.Create, onNavigateToStylusSettings)
+                SettingsInsetDivider()
+                SettingEntryRow("手势设置", "多指撤销、重做与页面移动", Icons.Outlined.Refresh, onNavigateToGestureSettings)
                 SettingsInsetDivider()
                 SettingEntryRow("系统权限", "管理应用所需权限", Icons.Outlined.Lock, onNavigateToPermissions)
                 SettingsInsetDivider()
