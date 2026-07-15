@@ -39,6 +39,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.annotation.model.UpdateCheckResult
 import com.example.annotation.model.VersionInfo
 import com.example.annotation.service.OverlayService
+import com.example.annotation.service.GestureForwardingAccessibilityService
 import com.example.annotation.ui.*
 import com.example.annotation.ui.theme.AnnotationTheme
 import com.example.annotation.ui.theme.SystemModeIcon
@@ -94,7 +95,10 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (OverlayService.isAnnotationModeActive && OverlayService.processStylusKeyEvent(event)) {
+        if (GestureForwardingAccessibilityService.isReady &&
+            OverlayService.isAnnotationModeActive &&
+            OverlayService.processStylusKeyEvent(event)
+        ) {
             return true
         }
         StylusInputMonitor.publishKey(event)

@@ -45,6 +45,9 @@ class DrawingEngine {
     private val _currentEraserPosition = MutableStateFlow<Offset?>(null)
     val currentEraserPosition: StateFlow<Offset?> = _currentEraserPosition.asStateFlow()
 
+    private val _currentEraserSize = MutableStateFlow<Float?>(null)
+    val currentEraserSize: StateFlow<Float?> = _currentEraserSize.asStateFlow()
+
     // 在一次橡皮擦划动中已经擦除的路径（避免重复擦除）
     private val erasedPathsInCurrentStroke = mutableSetOf<DrawingPath>()
 
@@ -114,17 +117,19 @@ class DrawingEngine {
      * 开始绘制
      */
     fun startDrawing(offset: Offset, pressure: Float = 1f) {
+        val normalizedPressure = normalizePressure(pressure)
         if (_currentTool.value == DrawingTool.ERASER) {
             // 橡皮擦模式：清空已擦除路径集合，开始新的擦除划动
             erasedPathsInCurrentStroke.clear()
             // 在开始擦除前，先保存当前状态（只保存一次）
             eraserChangedCurrentStroke = false
+            _currentEraserSize.value = pressureAdjustedSize(_eraserConfig.value.size, normalizedPressure)
             _currentEraserPosition.value = offset
-            erasePathsAt(offset)
+            erasePathsAt(offset, normalizedPressure)
         } else {
             // 画笔和荧光笔模式：正常绘制
             currentPath.clear()
-            currentPath.add(PathPoint(offset, pressure))
+            currentPath.add(PathPoint(offset, normalizedPressure))
         }
     }
 
@@ -132,16 +137,18 @@ class DrawingEngine {
      * 继续绘制
      */
     fun continueDrawing(offset: Offset, pressure: Float = 1f) {
+        val normalizedPressure = normalizePressure(pressure)
         if (_currentTool.value == DrawingTool.ERASER) {
             // 橡皮擦模式：持续擦除
+            _currentEraserSize.value = pressureAdjustedSize(_eraserConfig.value.size, normalizedPressure)
             _currentEraserPosition.value = offset
-            erasePathsAt(offset)
+            erasePathsAt(offset, normalizedPressure)
         } else {
             // 画笔和荧光笔模式：正常绘制
             if (currentPath.isEmpty()) {
-                startDrawing(offset, pressure)
+                startDrawing(offset, normalizedPressure)
             } else {
-                currentPath.add(PathPoint(offset, pressure))
+                currentPath.add(PathPoint(offset, normalizedPressure))
             }
         }
     }
@@ -153,6 +160,7 @@ class DrawingEngine {
         if (_currentTool.value == DrawingTool.ERASER) {
             // 橡皮擦模式：清除橡皮擦位置指示和已擦除路径集合
             _currentEraserPosition.value = null
+            _currentEraserSize.value = null
             erasedPathsInCurrentStroke.clear()
             if (eraserChangedCurrentStroke) saveToHistory()
             eraserChangedCurrentStroke = false
@@ -190,8 +198,8 @@ class DrawingEngine {
      * 在指定位置擦除路径
      * 检测橡皮擦是否与任何路径相交，如果相交则删除整条路径
      */
-    private fun erasePathsAt(eraserPosition: Offset) {
-        val eraserRadius = _eraserConfig.value.size / 2
+    private fun erasePathsAt(eraserPosition: Offset, pressure: Float) {
+        val eraserRadius = pressureAdjustedSize(_eraserConfig.value.size, pressure) / 2
         val pathsToRemove = mutableListOf<DrawingPath>()
 
         // 遍历所有路径，检查是否与橡皮擦相交（但跳过本次划动中已擦除的路径）
@@ -222,18 +230,9 @@ class DrawingEngine {
         val points = path.points
         if (points.isEmpty()) return false
 
-        // 获取路径的笔画宽度
-        val strokeWidth = when (path.tool) {
-            DrawingTool.PEN -> path.penConfig?.strokeWidth ?: 5f
-            DrawingTool.HIGHLIGHTER -> path.highlighterConfig?.strokeWidth ?: 20f
-            DrawingTool.ERASER -> 0f
-        }
-
-        // 考虑笔画宽度的有效擦除半径
-        val effectiveRadius = eraserRadius + strokeWidth / 2
-
         // 检查第一个点
-        if (distanceToPoint(eraserPosition, points[0].offset) <= effectiveRadius) {
+        val firstEffectiveRadius = eraserRadius + strokeWidthAt(path, points[0]) / 2
+        if (distanceToPoint(eraserPosition, points[0].offset) <= firstEffectiveRadius) {
             return true
         }
 
@@ -241,6 +240,11 @@ class DrawingEngine {
         for (i in 1 until points.size) {
             val p1 = points[i - 1].offset
             val p2 = points[i].offset
+            val segmentWidth = maxOf(
+                strokeWidthAt(path, points[i - 1]),
+                strokeWidthAt(path, points[i])
+            )
+            val effectiveRadius = eraserRadius + segmentWidth / 2
 
             if (distanceToLineSegment(eraserPosition, p1, p2) <= effectiveRadius) {
                 return true
@@ -248,6 +252,15 @@ class DrawingEngine {
         }
 
         return false
+    }
+
+    private fun strokeWidthAt(path: DrawingPath, point: PathPoint): Float {
+        val baseWidth = when (path.tool) {
+            DrawingTool.PEN -> path.penConfig?.strokeWidth ?: 5f
+            DrawingTool.HIGHLIGHTER -> path.highlighterConfig?.strokeWidth ?: 20f
+            DrawingTool.ERASER -> 0f
+        }
+        return pressureAdjustedSize(baseWidth, point.pressure)
     }
 
     /**
@@ -348,6 +361,7 @@ class DrawingEngine {
     fun cancelDrawing() {
         currentPath.clear()
         _currentEraserPosition.value = null
+        _currentEraserSize.value = null
         erasedPathsInCurrentStroke.clear()
         eraserChangedCurrentStroke = false
     }
@@ -361,12 +375,7 @@ class DrawingEngine {
      * 计算压感调整后的笔画宽度
      */
     fun calculatePressureAdjustedWidth(baseWidth: Float, pressure: Float): Float {
-        // 压感范围通常是 0.0 到 1.0
-        // 最小宽度为基础宽度的 30%，最大为基础宽度的 100%
-        val minScale = 0.3f
-        val maxScale = 1.0f
-        val scale = minScale + (maxScale - minScale) * pressure
-        return baseWidth * scale
+        return pressureAdjustedSize(baseWidth, pressure)
     }
 
     /**
@@ -376,7 +385,10 @@ class DrawingEngine {
         // 轻触时透明度降低，重压时接近完全不透明
         val minScale = 0.5f
         val maxScale = 1.0f
-        val scale = minScale + (maxScale - minScale) * pressure
+        val scale = minScale + (maxScale - minScale) * normalizePressure(pressure)
         return baseAlpha * scale
     }
+
+    private fun normalizePressure(pressure: Float): Float =
+        pressure.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 1f
 }

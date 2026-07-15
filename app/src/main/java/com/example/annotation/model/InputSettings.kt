@@ -251,6 +251,9 @@ data class StylusButtonMappings(
         }
     }
 
+    fun customActionFor(button: StylusButton, pressType: StylusPressType): StylusButtonAction? =
+        actionFor(button, pressType).takeUnless { it == StylusButtonAction.VENDOR_DEFAULT }
+
     fun actionsFor(button: StylusButton): List<StylusButtonAction> = when (button) {
         StylusButton.PRIMARY -> listOf(primarySingle, primaryDouble, primaryLong)
         StylusButton.SECONDARY -> listOf(secondarySingle, secondaryDouble, secondaryLong)
@@ -262,6 +265,14 @@ data class StylusButtonMappings(
     fun isMixed(button: StylusButton): Boolean = owns(button) &&
         actionsFor(button).any { it == StylusButtonAction.VENDOR_DEFAULT }
 }
+
+fun requiredStylusKeyBridgeButtons(
+    mappings: StylusButtonMappings,
+    bindings: StylusLearnedBindings
+): Set<StylusButton> = StylusButton.entries
+    .filterTo(linkedSetOf()) { button ->
+        mappings.owns(button) && bindings.keyCodeFor(button) != 0
+    }
 
 fun standardStylusButtonForKeyCode(keyCode: Int): StylusButton? = when (keyCode) {
     KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY -> StylusButton.PRIMARY

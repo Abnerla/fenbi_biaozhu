@@ -16,6 +16,7 @@ import com.example.annotation.model.StylusVendorPreset
 import com.example.annotation.model.StylusVendorPresetCatalog
 import com.example.annotation.model.migrateLegacyStylusProfile
 import com.example.annotation.model.resolveStylusButtonMasks
+import com.example.annotation.model.requiredStylusKeyBridgeButtons
 
 enum class AppThemeMode {
     SYSTEM,
@@ -281,25 +282,41 @@ class PreferencesManager(context: Context) {
 
     fun getStylusLearnedBindings(deviceKey: String): StylusLearnedBindings {
         val prefix = learnedDevicePrefix(deviceKey)
+        val fallback = getFallbackStylusLearnedBindings()
         return StylusLearnedBindings(
             primaryMask = prefs.getInt(
                 "${prefix}primary_mask",
-                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK, "primary_mask")
+                fallback.primaryMask
             ),
             secondaryMask = prefs.getInt(
                 "${prefix}secondary_mask",
-                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK, "secondary_mask")
+                fallback.secondaryMask
             ),
             primaryKeyCode = prefs.getInt(
                 "${prefix}primary_key",
-                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY, "primary_key")
+                fallback.primaryKeyCode
             ),
             secondaryKeyCode = prefs.getInt(
                 "${prefix}secondary_key",
-                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY, "secondary_key")
+                fallback.secondaryKeyCode
             )
         )
     }
+
+    fun getFallbackStylusLearnedBindings(): StylusLearnedBindings = StylusLearnedBindings(
+        primaryMask = learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK, "primary_mask"),
+        secondaryMask = learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK, "secondary_mask"),
+        primaryKeyCode = learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY, "primary_key"),
+        secondaryKeyCode = learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY, "secondary_key")
+    )
+
+    fun getRequiredStylusKeyBridgeButtons(): Set<StylusButton> = requiredStylusKeyBridgeButtons(
+        getStylusButtonMappings(),
+        getFallbackStylusLearnedBindings()
+    )
+
+    fun requiresStylusKeyBridge(): Boolean =
+        getStylusEnabled() && getRequiredStylusKeyBridgeButtons().isNotEmpty()
 
     fun setStylusLearnedMotionMask(deviceKey: String, button: StylusButton, mask: Int) {
         if (mask == 0) return

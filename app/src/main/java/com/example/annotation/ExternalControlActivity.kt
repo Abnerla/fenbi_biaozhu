@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import com.example.annotation.service.GestureForwardingAccessibilityService
 import com.example.annotation.service.OverlayService
 import com.example.annotation.utils.PreferencesManager
 
@@ -26,6 +27,7 @@ class ExternalControlActivity : ComponentActivity() {
         const val RESULT_ANNOTATION_CONTROL_DISABLED = "annotation_control_disabled"
         const val RESULT_FLOATING_CONTROL_DISABLED = "floating_control_disabled"
         const val RESULT_OVERLAY_PERMISSION_REQUIRED = "overlay_permission_required"
+        const val RESULT_STYLUS_KEY_BRIDGE_REQUIRED = "stylus_key_bridge_required"
     }
 
     private enum class Command { ON, OFF, TOGGLE }
@@ -88,6 +90,13 @@ class ExternalControlActivity : ComponentActivity() {
             Command.OFF -> false
             Command.TOGGLE -> !OverlayService.isAnnotationModeActive
             null -> null
+        }
+
+        if (targetAnnotationMode == true && preferences.requiresStylusKeyBridge() &&
+            !GestureForwardingAccessibilityService.isReady
+        ) {
+            finishWithResult(Activity.RESULT_CANCELED, RESULT_STYLUS_KEY_BRIDGE_REQUIRED)
+            return
         }
 
         when {

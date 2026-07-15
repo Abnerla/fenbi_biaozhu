@@ -65,6 +65,8 @@ fun StylusSettingsScreen(
     var accessibilityReady by remember {
         mutableStateOf(GestureForwardingAccessibilityService.isReady)
     }
+    var showBridgeAuthorizationDialog by remember { mutableStateOf(false) }
+    var promptBridgeAfterActionPicker by remember { mutableStateOf(false) }
     var primaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomPrimaryMask().toString()) }
     var secondaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomSecondaryMask().toString()) }
     val mappings = remember {
@@ -83,6 +85,16 @@ fun StylusSettingsScreen(
         activeIdentity?.let { preferencesManager.getStylusLearnedBindings(it.stableKey) }
             ?: StylusLearnedBindings()
     }
+    val currentMappings = mappings.toStylusButtonMappings()
+    val requiredKeyBridgeButtons = if (enabled) {
+        requiredStylusKeyBridgeButtons(
+            currentMappings,
+            preferencesManager.getFallbackStylusLearnedBindings()
+        )
+    } else {
+        emptySet()
+    }
+    val requiresKeyBridge = requiredKeyBridgeButtons.isNotEmpty()
 
     fun startLearning(target: StylusButton) {
         learningStartSequence = latestReport?.sequence ?: 0L
@@ -134,6 +146,9 @@ fun StylusSettingsScreen(
                     target,
                     report.keyCode
                 )
+                if (preferencesManager.requiresStylusKeyBridge() && !accessibilityReady) {
+                    showBridgeAuthorizationDialog = true
+                }
             }
         }
         learnedIdentity = report.device
@@ -238,7 +253,8 @@ fun StylusSettingsScreen(
                     report = latestReport,
                     learningTarget = learningTarget,
                     learnedBindings = learnedBindings,
-                    accessibilityReady = accessibilityReady
+                    accessibilityReady = accessibilityReady,
+                    requiresKeyBridge = requiresKeyBridge
                 )
                 SettingsInsetDivider()
                 StylusCommandRow(
@@ -267,13 +283,11 @@ fun StylusSettingsScreen(
                         }
                     }
                 )
-                if (!accessibilityReady &&
-                    (learnedBindings.primaryKeyCode != 0 || learnedBindings.secondaryKeyCode != 0)
-                ) {
+                if (!accessibilityReady && requiresKeyBridge) {
                     SettingsInsetDivider()
                     StylusCommandRow(
                         title = "启用手写笔按键桥接",
-                        description = "当前按键以 KeyEvent 上报，启用后才能在悬浮标注中执行功能",
+                        description = "必须启用后才能进入标注并拦截厂商原始功能",
                         icon = Icons.Outlined.Settings,
                         onClick = {
                             context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -323,6 +337,7 @@ fun StylusSettingsScreen(
                         mappings.keys.forEach { key ->
                             mappings[key] = StylusButtonAction.VENDOR_DEFAULT
                         }
+                        showBridgeAuthorizationDialog = false
                     }
                 )
             }
@@ -405,8 +420,27 @@ fun StylusSettingsScreen(
             onSelected = {
                 mappings[picker.preferenceKey] = it
                 preferencesManager.setStylusButtonAction(picker.preferenceKey, it)
+                if (preferencesManager.requiresStylusKeyBridge() && !accessibilityReady) {
+                    promptBridgeAfterActionPicker = true
+                }
             },
-            onDismiss = { actionPicker = null }
+            onDismiss = {
+                actionPicker = null
+                if (promptBridgeAfterActionPicker) {
+                    promptBridgeAfterActionPicker = false
+                    showBridgeAuthorizationDialog = true
+                }
+            }
+        )
+    }
+
+    if (showBridgeAuthorizationDialog) {
+        StylusBridgeRequiredDialog(
+            onEnable = {
+                showBridgeAuthorizationDialog = false
+                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            },
+            onDismiss = { showBridgeAuthorizationDialog = false }
         )
     }
 }
@@ -419,6 +453,15 @@ private data class StylusActionPicker(
     val buttonName: String,
     val pressName: String,
     val preferenceKey: String
+)
+
+private fun Map<String, StylusButtonAction>.toStylusButtonMappings() = StylusButtonMappings(
+    primarySingle = getValue(PreferencesManager.STYLUS_PRIMARY_SINGLE),
+    primaryDouble = getValue(PreferencesManager.STYLUS_PRIMARY_DOUBLE),
+    primaryLong = getValue(PreferencesManager.STYLUS_PRIMARY_LONG),
+    secondarySingle = getValue(PreferencesManager.STYLUS_SECONDARY_SINGLE),
+    secondaryDouble = getValue(PreferencesManager.STYLUS_SECONDARY_DOUBLE),
+    secondaryLong = getValue(PreferencesManager.STYLUS_SECONDARY_LONG)
 )
 
 @Composable
@@ -529,7 +572,8 @@ private fun StylusLearningStatusRow(
     report: StylusInputReport?,
     learningTarget: StylusButton?,
     learnedBindings: StylusLearnedBindings,
-    accessibilityReady: Boolean
+    accessibilityReady: Boolean,
+    requiresKeyBridge: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -551,6 +595,21 @@ private fun StylusLearningStatusRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (requiresKeyBridge) {
+                Text(
+                    if (accessibilityReady) {
+                        "按键独占拦截已连接"
+                    } else {
+                        "按键独占拦截未连接，当前不能进入标注模式"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (accessibilityReady) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+            }
             val learned = buildList {
                 if (learnedBindings.primaryMask != 0) add("主键 mask=${learnedBindings.primaryMask}")
                 if (learnedBindings.primaryKeyCode != 0) add("主键 key=${learnedBindings.primaryKeyCode}")
@@ -563,6 +622,45 @@ private fun StylusLearningStatusRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StylusBridgeRequiredDialog(
+    onEnable: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    IosDialog(onDismiss = onDismiss) { dismiss ->
+        Column {
+            IosDialogTitle("需要启用按键桥接")
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            Text(
+                "当前手写笔按键以 KeyEvent 上报。启用“粉笔标注手势服务”后，应用才能在标注模式中优先拦截厂商原始功能，只执行你设置的软件动作。",
+                modifier = Modifier.padding(20.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                TextButton(
+                    onClick = dismiss,
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Text("稍后")
+                }
+                TextButton(
+                    onClick = {
+                        dismiss()
+                        onEnable()
+                    },
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Text("去启用", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

@@ -7,7 +7,6 @@ import com.example.annotation.model.StylusButton
 import com.example.annotation.model.StylusButtonAction
 import com.example.annotation.model.StylusButtonMasks
 import com.example.annotation.model.StylusDeviceIdentity
-import com.example.annotation.model.StylusGesture
 import com.example.annotation.model.standardStylusButtonForKeyCode
 
 class StylusInputRouter(
@@ -17,17 +16,9 @@ class StylusInputRouter(
     private var motionState = StylusButtonStateSnapshot()
     private var keyState = StylusButtonStateSnapshot()
     private var deliveredState = StylusButtonStateSnapshot()
-    private var currentIdentity: StylusDeviceIdentity? = null
     private val detector = StylusButtonGestureDetector { button, pressType ->
         val mappings = preferencesManager.getStylusButtonMappings()
-        val configuredAction = mappings.actionFor(button, pressType)
-        val action = if (configuredAction == StylusButtonAction.VENDOR_DEFAULT) {
-            preferencesManager.resolveStylusPreset(currentIdentity)
-                ?.emulatedActions
-                ?.get(StylusGesture(button, pressType))
-        } else {
-            configuredAction
-        }
+        val action = mappings.customActionFor(button, pressType)
         Log.d(TAG, "gesture button=$button type=$pressType action=$action")
         action?.let(onAction)
     }
@@ -43,7 +34,6 @@ class StylusInputRouter(
             force = hasLearnedMotionBinding
         ) ?: return false
 
-        currentIdentity = report.device
         val configured = preferencesManager.getStylusButtonMasks()
         val masks = StylusButtonMasks(
             primary = learned.primaryMask.takeIf { it != 0 } ?: configured.primary,
@@ -62,27 +52,28 @@ class StylusInputRouter(
         val mappings = preferencesManager.getStylusButtonMappings()
         val explicitButton = StylusEventNormalizer.buttonForMask(event.actionButton, masks)
         val ownsTransition = normalized.transitions.any { mappings.owns(it.button) }
-        return explicitButton?.let(mappings::owns) == true || ownsTransition
+        val ownsPressedButton = StylusButton.entries.any { button ->
+            motionState.isPressed(button) && mappings.owns(button)
+        }
+        return explicitButton?.let(mappings::owns) == true || ownsTransition || ownsPressedButton
+    }
+
+    fun shouldConsumeKeyEvent(event: KeyEvent): Boolean {
+        val button = resolveKeyButton(event) ?: return false
+        return preferencesManager.getStylusButtonMappings().owns(button)
     }
 
     fun processKeyEvent(event: KeyEvent): Boolean {
         if (!preferencesManager.getStylusEnabled()) return false
 
         val identity = StylusDeviceIdentity.fromInputDevice(event.device)
-        val learned = preferencesManager.getStylusLearnedBindings(identity.stableKey)
-        val button = when (event.keyCode) {
-            learned.primaryKeyCode -> StylusButton.PRIMARY.takeIf { learned.primaryKeyCode != 0 }
-            learned.secondaryKeyCode -> StylusButton.SECONDARY.takeIf { learned.secondaryKeyCode != 0 }
-            else -> standardStylusButtonForKeyCode(event.keyCode)
-        } ?: return false
+        val button = resolveKeyButton(event, identity) ?: return false
 
         Log.d(
             TAG,
             "key action=${event.action} code=${event.keyCode} device=${identity.stableKey} button=$button"
         )
         StylusInputMonitor.publishKey(event, force = true)
-        currentIdentity = identity
-
         val mappings = preferencesManager.getStylusButtonMappings()
         if (!mappings.owns(button)) return false
 
@@ -90,6 +81,19 @@ class StylusInputRouter(
         keyState = normalized.state
         synchronizeDetector(event.eventTime)
         return true
+    }
+
+    private fun resolveKeyButton(
+        event: KeyEvent,
+        identity: StylusDeviceIdentity = StylusDeviceIdentity.fromInputDevice(event.device)
+    ): StylusButton? {
+        if (!preferencesManager.getStylusEnabled()) return null
+        val learned = preferencesManager.getStylusLearnedBindings(identity.stableKey)
+        return when (event.keyCode) {
+            learned.primaryKeyCode -> StylusButton.PRIMARY.takeIf { learned.primaryKeyCode != 0 }
+            learned.secondaryKeyCode -> StylusButton.SECONDARY.takeIf { learned.secondaryKeyCode != 0 }
+            else -> standardStylusButtonForKeyCode(event.keyCode)
+        }
     }
 
     private fun synchronizeDetector(eventTime: Long) {
@@ -110,7 +114,6 @@ class StylusInputRouter(
         motionState = StylusButtonStateSnapshot()
         keyState = StylusButtonStateSnapshot()
         deliveredState = StylusButtonStateSnapshot()
-        currentIdentity = null
     }
 
     private companion object {

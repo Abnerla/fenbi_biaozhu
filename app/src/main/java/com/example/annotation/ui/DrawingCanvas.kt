@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
@@ -15,7 +16,14 @@ import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.*
 import com.example.annotation.utils.PreferencesManager
+import com.example.annotation.utils.StylusPressure
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 private class CanvasInputState {
     var drawing = false
@@ -51,6 +59,7 @@ fun DrawingCanvas(
     val highlighterConfig by drawingEngine.highlighterConfig.collectAsState()
     val eraserConfig by drawingEngine.eraserConfig.collectAsState()
     val eraserPosition by drawingEngine.currentEraserPosition.collectAsState()
+    val currentEraserSize by drawingEngine.currentEraserSize.collectAsState()
     var currentDrawingPath by remember { mutableStateOf<List<PathPoint>>(emptyList()) }
     val inputState = remember { CanvasInputState() }
     val density = LocalDensity.current
@@ -66,6 +75,19 @@ fun DrawingCanvas(
         return Offset(x / event.pointerCount, y / event.pointerCount)
     }
 
+    fun pressure(event: MotionEvent, historyPosition: Int? = null): Float {
+        val reportedPressure = if (historyPosition == null) {
+            event.getPressure(0)
+        } else {
+            event.getHistoricalPressure(0, historyPosition)
+        }
+        return StylusPressure.resolve(
+            stylusEnabled = preferencesManager?.getStylusEnabled() == true,
+            toolType = event.getToolType(0),
+            reportedPressure = reportedPressure
+        )
+    }
+
     fun handleMotionEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -76,7 +98,7 @@ fun DrawingCanvas(
                 inputState.lastCentroid = inputState.startCentroid
                 inputState.rawOffset = Offset(event.rawX - event.x, event.rawY - event.y)
                 inputState.drawing = true
-                drawingEngine.startDrawing(Offset(event.x, event.y), event.pressure.coerceIn(0f, 1f))
+                drawingEngine.startDrawing(Offset(event.x, event.y), pressure(event))
                 currentDrawingPath = drawingEngine.getCurrentDrawingPath()
                 onDrawingStart()
             }
@@ -98,9 +120,18 @@ fun DrawingCanvas(
                 if (inputState.maxPointerCount >= 2) {
                     inputState.lastCentroid = centroid(event)
                 } else if (inputState.drawing) {
+                    for (historyPosition in 0 until event.historySize) {
+                        drawingEngine.continueDrawing(
+                            Offset(
+                                event.getHistoricalX(0, historyPosition),
+                                event.getHistoricalY(0, historyPosition)
+                            ),
+                            pressure(event, historyPosition)
+                        )
+                    }
                     drawingEngine.continueDrawing(
                         Offset(event.x, event.y),
-                        event.pressure.coerceIn(0f, 1f)
+                        pressure(event)
                     )
                     currentDrawingPath = drawingEngine.getCurrentDrawingPath()
                 }
@@ -188,7 +219,7 @@ fun DrawingCanvas(
         }
 
         eraserPosition?.let { position ->
-            val radius = eraserConfig.size / 2
+            val radius = (currentEraserSize ?: eraserConfig.size) / 2
             drawCircle(Color.Gray.copy(alpha = 0.5f), radius, position, style = Stroke(width = 2f))
             drawLine(Color.Gray.copy(alpha = 0.5f), Offset(position.x - 10f, position.y), Offset(position.x + 10f, position.y), 1f)
             drawLine(Color.Gray.copy(alpha = 0.5f), Offset(position.x, position.y - 10f), Offset(position.x, position.y + 10f), 1f)
@@ -196,20 +227,40 @@ fun DrawingCanvas(
     }
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAnnotationPath(
+private fun DrawScope.drawAnnotationPath(
     drawingPath: DrawingPath,
     color: Color,
     width: Float,
     alpha: Float
 ) {
-    if (drawingPath.points.size < 2) return
+    val points = drawingPath.points
+    if (points.isEmpty()) return
+
+    val drawColor = color.copy(alpha = alpha)
+    if (points.size == 1) {
+        drawCircle(
+            color = drawColor,
+            radius = pressureAdjustedSize(width, points.first().pressure) / 2,
+            center = points.first().offset,
+            blendMode = BlendMode.SrcOver
+        )
+        return
+    }
+
+    val minPressure = points.minOf(PathPoint::pressure)
+    val maxPressure = points.maxOf(PathPoint::pressure)
+    if (maxPressure - minPressure > 0.01f) {
+        drawVariableWidthPath(points, drawColor, width)
+        return
+    }
+
     val path = Path().apply {
-        val first = drawingPath.points.first().offset
+        val first = points.first().offset
         moveTo(first.x, first.y)
-        for (index in 1 until drawingPath.points.size) {
-            val previous = drawingPath.points[index - 1].offset
-            val current = drawingPath.points[index].offset
-            if (index < drawingPath.points.lastIndex) {
+        for (index in 1 until points.size) {
+            val previous = points[index - 1].offset
+            val current = points[index].offset
+            if (index < points.lastIndex) {
                 quadraticTo(
                     previous.x,
                     previous.y,
@@ -223,8 +274,125 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAnnotationPath(
     }
     drawPath(
         path = path,
-        color = color.copy(alpha = alpha),
-        style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        color = drawColor,
+        style = Stroke(
+            width = pressureAdjustedSize(width, points.first().pressure),
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        ),
         blendMode = BlendMode.SrcOver
     )
+}
+
+private fun DrawScope.drawVariableWidthPath(
+    points: List<PathPoint>,
+    color: Color,
+    baseWidth: Float
+) {
+    val samples = mutableListOf(
+        StrokeSample(points.first().offset, pressureAdjustedSize(baseWidth, points.first().pressure))
+    )
+    var sampleStart = points.first().offset
+    var sampleStartPressure = points.first().pressure
+
+    for (index in 1 until points.size) {
+        val control = points[index - 1]
+        val current = points[index]
+        val segmentEnd = if (index < points.lastIndex) {
+            Offset(
+                (control.offset.x + current.offset.x) / 2,
+                (control.offset.y + current.offset.y) / 2
+            )
+        } else {
+            current.offset
+        }
+        val segmentEndPressure = if (index < points.lastIndex) {
+            (control.pressure + current.pressure) / 2
+        } else {
+            current.pressure
+        }
+        val estimatedLength = (sampleStart - control.offset).getDistance() +
+            (control.offset - segmentEnd).getDistance()
+        val sampleCount = ceil(estimatedLength / 2f).toInt().coerceIn(1, 32)
+
+        for (sample in 1..sampleCount) {
+            val t = sample.toFloat() / sampleCount
+            val inverseT = 1f - t
+            val sampledOffset = Offset(
+                inverseT * inverseT * sampleStart.x +
+                    2f * inverseT * t * control.offset.x +
+                    t * t * segmentEnd.x,
+                inverseT * inverseT * sampleStart.y +
+                    2f * inverseT * t * control.offset.y +
+                    t * t * segmentEnd.y
+            )
+            val sampledPressure = sampleStartPressure +
+                (segmentEndPressure - sampleStartPressure) * t
+            val sampledWidth = pressureAdjustedSize(baseWidth, sampledPressure)
+            samples.add(StrokeSample(sampledOffset, sampledWidth))
+        }
+
+        sampleStart = segmentEnd
+        sampleStartPressure = segmentEndPressure
+    }
+
+    drawPath(
+        path = variableWidthOutline(samples),
+        color = color,
+        blendMode = BlendMode.SrcOver
+    )
+}
+
+private data class StrokeSample(val offset: Offset, val width: Float)
+
+private fun variableWidthOutline(samples: List<StrokeSample>): Path {
+    val normals = samples.indices.map { index ->
+        val before = samples[if (index == 0) index else index - 1].offset
+        val after = samples[if (index == samples.lastIndex) index else index + 1].offset
+        val dx = after.x - before.x
+        val dy = after.y - before.y
+        val length = sqrt(dx * dx + dy * dy)
+        if (length > 0.001f) Offset(-dy / length, dx / length) else Offset(0f, 1f)
+    }
+    val left = samples.indices.map { index ->
+        samples[index].offset + normals[index] * (samples[index].width / 2)
+    }
+    val right = samples.indices.map { index ->
+        samples[index].offset - normals[index] * (samples[index].width / 2)
+    }
+
+    return Path().apply {
+        moveTo(left.first().x, left.first().y)
+        for (index in 1 until left.size) lineTo(left[index].x, left[index].y)
+
+        appendRoundCap(
+            center = samples.last().offset,
+            radius = samples.last().width / 2,
+            startAngle = atan2(normals.last().y, normals.last().x)
+        )
+
+        for (index in right.lastIndex - 1 downTo 0) lineTo(right[index].x, right[index].y)
+
+        appendRoundCap(
+            center = samples.first().offset,
+            radius = samples.first().width / 2,
+            startAngle = atan2(-normals.first().y, -normals.first().x)
+        )
+        close()
+    }
+}
+
+private fun Path.appendRoundCap(
+    center: Offset,
+    radius: Float,
+    startAngle: Float,
+    steps: Int = 8
+) {
+    for (step in 1..steps) {
+        val angle = startAngle - PI.toFloat() * step / steps
+        lineTo(
+            center.x + cos(angle) * radius,
+            center.y + sin(angle) * radius
+        )
+    }
 }

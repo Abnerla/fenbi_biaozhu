@@ -3,6 +3,7 @@ package com.example.annotation.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
+import android.content.Intent
 import android.graphics.Path
 import android.os.Handler
 import android.os.Looper
@@ -44,6 +45,7 @@ class GestureForwardingAccessibilityService : AccessibilityService() {
             flags = flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
         }
         instance = this
+        OverlayService.onStylusKeyBridgeConnected()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
@@ -51,15 +53,28 @@ class GestureForwardingAccessibilityService : AccessibilityService() {
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (StylusInputMonitor.isLearning) StylusInputMonitor.publishKey(event, force = true)
         if (!OverlayService.isAnnotationModeActive) return false
-        return OverlayService.processStylusKeyEvent(event)
+        if (!OverlayService.shouldConsumeStylusKeyEvent(event)) return false
+        OverlayService.processStylusKeyEvent(event)
+        return true
     }
 
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
-        if (instance === this) instance = null
+        detachBridge()
         OverlayService.setOverlayTouchable(true)
         super.onDestroy()
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        detachBridge()
+        return super.onUnbind(intent)
+    }
+
+    private fun detachBridge() {
+        if (instance !== this) return
+        instance = null
+        OverlayService.onStylusKeyBridgeDisconnected()
     }
 
     private fun dispatchForwardedSwipe(

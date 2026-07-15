@@ -9,7 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.KeyEvent
@@ -72,6 +74,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     private lateinit var screenCaptureManager: ScreenCaptureManager
     private lateinit var stylusInputRouter: StylusInputRouter
     private val themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingOverlayAfterStylusBridge = false
 
     // 工具栏可见性状态 - 用于截图时隐藏UI
     private val toolbarVisibleState = mutableStateOf(true)
@@ -167,6 +171,17 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         fun processStylusKeyEvent(event: KeyEvent): Boolean =
             activeInstance?.stylusInputRouter?.processKeyEvent(event) ?: false
+
+        fun shouldConsumeStylusKeyEvent(event: KeyEvent): Boolean =
+            activeInstance?.stylusInputRouter?.shouldConsumeKeyEvent(event) ?: false
+
+        fun onStylusKeyBridgeConnected() {
+            activeInstance?.handleStylusKeyBridgeConnected()
+        }
+
+        fun onStylusKeyBridgeDisconnected() {
+            activeInstance?.handleStylusKeyBridgeDisconnected()
+        }
 
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
@@ -296,6 +311,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             if (intent.getBooleanExtra(EXTRA_ANNOTATION_ENABLED, false)) {
                 showOverlay()
             } else {
+                pendingOverlayAfterStylusBridge = false
                 removeOverlay()
                 showFloatingButton()
             }
@@ -644,6 +660,13 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             stopSelf()
             return
         }
+        if (preferencesManager.requiresStylusKeyBridge() &&
+            !GestureForwardingAccessibilityService.isReady
+        ) {
+            requestStylusKeyBridge()
+            return
+        }
+        pendingOverlayAfterStylusBridge = false
 
         // 隐藏悬浮按钮
         removeFloatingButton()
@@ -787,6 +810,48 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         }
         overlayParams = null
         isAnnotationModeActive = false
+        stylusInputRouter.dispose()
+    }
+
+    private fun requestStylusKeyBridge() {
+        pendingOverlayAfterStylusBridge = true
+        Toast.makeText(
+            this,
+            "请启用“粉笔标注手势服务”，以拦截手写笔厂商原始功能",
+            Toast.LENGTH_LONG
+        ).show()
+        runCatching {
+            startActivity(
+                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.onFailure { error ->
+            pendingOverlayAfterStylusBridge = false
+            android.util.Log.e("OverlayService", "无法打开无障碍设置", error)
+        }
+    }
+
+    private fun handleStylusKeyBridgeConnected() {
+        mainHandler.post {
+            if (!pendingOverlayAfterStylusBridge) return@post
+            pendingOverlayAfterStylusBridge = false
+            showOverlay()
+        }
+    }
+
+    private fun handleStylusKeyBridgeDisconnected() {
+        mainHandler.post {
+            pendingOverlayAfterStylusBridge = false
+            if (!isAnnotationModeActive || !preferencesManager.requiresStylusKeyBridge()) {
+                return@post
+            }
+            removeOverlay()
+            showFloatingButton()
+            Toast.makeText(
+                this,
+                "手写笔按键桥接已断开，已退出标注以避免触发厂商原始功能",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun updateOverlayTouchable(touchable: Boolean) {

@@ -41,9 +41,18 @@ data class EraserConfig(
  */
 data class PathPoint(
     val offset: Offset,
-    val pressure: Float = 1f,      // 压感值 0-1
+    val pressure: Float = 1f,      // 归一化压感值 0-1；非手写笔输入固定为 1
     val timestamp: Long = System.currentTimeMillis()
 )
+
+private const val MIN_PRESSURE_SIZE_SCALE = 0.3f
+
+fun pressureAdjustedSize(baseSize: Float, pressure: Float): Float {
+    val normalizedPressure = pressure.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 1f
+    val scale = MIN_PRESSURE_SIZE_SCALE +
+        (1f - MIN_PRESSURE_SIZE_SCALE) * normalizedPressure
+    return baseSize * scale
+}
 
 /**
  * 绘图路径

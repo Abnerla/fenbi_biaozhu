@@ -104,6 +104,38 @@ class InputSettingsTest {
     }
 
     @Test
+    fun keyBridgeIsRequiredOnlyForOwnedKeyBoundButtons() {
+        val bindings = StylusLearnedBindings(primaryKeyCode = 92, secondaryKeyCode = 93)
+        val mappings = StylusButtonMappings(secondaryLong = StylusButtonAction.PEN)
+
+        assertEquals(
+            setOf(StylusButton.SECONDARY),
+            requiredStylusKeyBridgeButtons(mappings, bindings)
+        )
+        assertTrue(
+            requiredStylusKeyBridgeButtons(
+                StylusButtonMappings(secondaryLong = StylusButtonAction.NONE),
+                bindings
+            ).contains(StylusButton.SECONDARY)
+        )
+        assertTrue(requiredStylusKeyBridgeButtons(StylusButtonMappings(), bindings).isEmpty())
+    }
+
+    @Test
+    fun ownedButtonDoesNotReplayVendorDefaultForUnconfiguredGestures() {
+        val mappings = StylusButtonMappings(secondaryLong = StylusButtonAction.PEN)
+
+        assertEquals(
+            null,
+            mappings.customActionFor(StylusButton.SECONDARY, StylusPressType.SINGLE)
+        )
+        assertEquals(
+            StylusButtonAction.PEN,
+            mappings.customActionFor(StylusButton.SECONDARY, StylusPressType.LONG)
+        )
+    }
+
+    @Test
     fun vendorPresetMatchingIsModelSpecific() {
         val focusPen = StylusDeviceIdentity(
             manufacturer = "Xiaomi",
