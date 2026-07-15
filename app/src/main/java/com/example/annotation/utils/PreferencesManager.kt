@@ -58,6 +58,10 @@ class PreferencesManager(context: Context) {
         private const val KEY_STYLUS_CUSTOM_PRIMARY_MASK = "stylus_custom_primary_mask"
         private const val KEY_STYLUS_CUSTOM_SECONDARY_MASK = "stylus_custom_secondary_mask"
         private const val KEY_STYLUS_LEARNED_PREFIX = "stylus_learned_"
+        private const val KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK = "stylus_learned_global_primary_mask"
+        private const val KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK = "stylus_learned_global_secondary_mask"
+        private const val KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY = "stylus_learned_global_primary_key"
+        private const val KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY = "stylus_learned_global_secondary_key"
         const val STYLUS_PRIMARY_SINGLE = "stylus_primary_single"
         const val STYLUS_PRIMARY_DOUBLE = "stylus_primary_double"
         const val STYLUS_PRIMARY_LONG = "stylus_primary_long"
@@ -278,33 +282,79 @@ class PreferencesManager(context: Context) {
     fun getStylusLearnedBindings(deviceKey: String): StylusLearnedBindings {
         val prefix = learnedDevicePrefix(deviceKey)
         return StylusLearnedBindings(
-            primaryMask = prefs.getInt("${prefix}primary_mask", 0),
-            secondaryMask = prefs.getInt("${prefix}secondary_mask", 0),
-            primaryKeyCode = prefs.getInt("${prefix}primary_key", 0),
-            secondaryKeyCode = prefs.getInt("${prefix}secondary_key", 0)
+            primaryMask = prefs.getInt(
+                "${prefix}primary_mask",
+                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK, "primary_mask")
+            ),
+            secondaryMask = prefs.getInt(
+                "${prefix}secondary_mask",
+                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK, "secondary_mask")
+            ),
+            primaryKeyCode = prefs.getInt(
+                "${prefix}primary_key",
+                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY, "primary_key")
+            ),
+            secondaryKeyCode = prefs.getInt(
+                "${prefix}secondary_key",
+                learnedBindingFallback(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY, "secondary_key")
+            )
         )
     }
 
     fun setStylusLearnedMotionMask(deviceKey: String, button: StylusButton, mask: Int) {
         if (mask == 0) return
         val suffix = if (button == StylusButton.PRIMARY) "primary_mask" else "secondary_mask"
-        prefs.edit().putInt(learnedDevicePrefix(deviceKey) + suffix, mask).apply()
+        val globalKey = if (button == StylusButton.PRIMARY) {
+            KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK
+        } else {
+            KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK
+        }
+        prefs.edit()
+            .putInt(learnedDevicePrefix(deviceKey) + suffix, mask)
+            .putInt(globalKey, mask)
+            .apply()
     }
 
     fun setStylusLearnedKeyCode(deviceKey: String, button: StylusButton, keyCode: Int) {
         if (keyCode == 0) return
         val suffix = if (button == StylusButton.PRIMARY) "primary_key" else "secondary_key"
-        prefs.edit().putInt(learnedDevicePrefix(deviceKey) + suffix, keyCode).apply()
+        val globalKey = if (button == StylusButton.PRIMARY) {
+            KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY
+        } else {
+            KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY
+        }
+        prefs.edit()
+            .putInt(learnedDevicePrefix(deviceKey) + suffix, keyCode)
+            .putInt(globalKey, keyCode)
+            .apply()
     }
 
     fun clearStylusLearnedBindings(deviceKey: String) {
         val prefix = learnedDevicePrefix(deviceKey)
-        prefs.edit()
-            .remove("${prefix}primary_mask")
-            .remove("${prefix}secondary_mask")
-            .remove("${prefix}primary_key")
-            .remove("${prefix}secondary_key")
-            .apply()
+        val deviceBindings = StylusLearnedBindings(
+            primaryMask = prefs.getInt("${prefix}primary_mask", 0),
+            secondaryMask = prefs.getInt("${prefix}secondary_mask", 0),
+            primaryKeyCode = prefs.getInt("${prefix}primary_key", 0),
+            secondaryKeyCode = prefs.getInt("${prefix}secondary_key", 0)
+        )
+        prefs.edit().apply {
+            remove("${prefix}primary_mask")
+            remove("${prefix}secondary_mask")
+            remove("${prefix}primary_key")
+            remove("${prefix}secondary_key")
+            if (deviceBindings.primaryMask != 0 &&
+                prefs.getInt(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK, 0) == deviceBindings.primaryMask
+            ) remove(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_MASK)
+            if (deviceBindings.secondaryMask != 0 &&
+                prefs.getInt(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK, 0) == deviceBindings.secondaryMask
+            ) remove(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_MASK)
+            if (deviceBindings.primaryKeyCode != 0 &&
+                prefs.getInt(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY, 0) == deviceBindings.primaryKeyCode
+            ) remove(KEY_STYLUS_LEARNED_GLOBAL_PRIMARY_KEY)
+            if (deviceBindings.secondaryKeyCode != 0 &&
+                prefs.getInt(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY, 0) == deviceBindings.secondaryKeyCode
+            ) remove(KEY_STYLUS_LEARNED_GLOBAL_SECONDARY_KEY)
+        }.apply()
     }
 
     fun getTwoFingerTapUndoEnabled(): Boolean = prefs.getBoolean(KEY_GESTURE_TWO_FINGER_UNDO, true)
@@ -335,6 +385,19 @@ class PreferencesManager(context: Context) {
             Base64.NO_WRAP or Base64.URL_SAFE
         )
         return KEY_STYLUS_LEARNED_PREFIX + encoded + "_"
+    }
+
+    private fun learnedBindingFallback(globalKey: String, suffix: String): Int {
+        val global = prefs.getInt(globalKey, 0)
+        if (global != 0) return global
+        return prefs.all.asSequence()
+            .filter { (key, value) ->
+                key.startsWith(KEY_STYLUS_LEARNED_PREFIX) &&
+                    key.endsWith("_$suffix") && value is Int && value != 0
+            }
+            .map { it.value as Int }
+            .distinct()
+            .singleOrNull() ?: 0
     }
 
     private fun migrateLegacyStylusSettingsIfNeeded() {

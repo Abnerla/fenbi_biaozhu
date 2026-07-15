@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.annotation.drawing.DrawingEngine
-import android.view.MotionEvent
 import com.example.annotation.service.GestureForwardingAccessibilityService
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -52,8 +51,7 @@ fun OverlayContent(
     onToolbarPositionChanged: (Float, Float) -> Unit = { _, _ -> },
     onOrientationChanged: (ToolbarOrientation) -> Unit = {},
     toolbarVisible: Boolean = true,
-    preferencesManager: com.example.annotation.utils.PreferencesManager? = null,
-    onStylusMotionEvent: (MotionEvent) -> Boolean = { false }
+    preferencesManager: com.example.annotation.utils.PreferencesManager? = null
 ) {
     // 二级菜单显示状态
     val secondaryMenuState = remember { mutableStateOf<SecondaryMenuType?>(null) }
@@ -180,7 +178,6 @@ fun OverlayContent(
                     duration
                 )
             },
-            onStylusMotionEvent = onStylusMotionEvent,
             onDrawingStart = {
                 // 如果启用了自动折叠，且二级菜单正在显示，则折叠它
                 if (autoCollapseEnabled && secondaryMenuState.value != null) {

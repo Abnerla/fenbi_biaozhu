@@ -94,6 +94,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (OverlayService.isAnnotationModeActive && OverlayService.processStylusKeyEvent(event)) {
+            return true
+        }
         StylusInputMonitor.publishKey(event)
         return super.dispatchKeyEvent(event)
     }

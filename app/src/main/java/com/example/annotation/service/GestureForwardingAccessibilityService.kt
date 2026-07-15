@@ -1,6 +1,7 @@
 package com.example.annotation.service
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.os.Handler
@@ -39,16 +40,17 @@ class GestureForwardingAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        serviceInfo = serviceInfo.apply {
+            flags = flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+        }
         instance = this
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
-        if (!OverlayService.isAnnotationModeActive) {
-            if (StylusInputMonitor.isLearning) StylusInputMonitor.publishKey(event, force = true)
-            return false
-        }
+        if (StylusInputMonitor.isLearning) StylusInputMonitor.publishKey(event, force = true)
+        if (!OverlayService.isAnnotationModeActive) return false
         return OverlayService.processStylusKeyEvent(event)
     }
 

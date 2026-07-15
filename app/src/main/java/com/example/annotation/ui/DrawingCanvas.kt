@@ -44,7 +44,6 @@ fun DrawingCanvas(
     onTwoFingerTap: () -> Unit = {},
     onThreeFingerTap: () -> Unit = {},
     onTwoFingerSwipe: (Offset, Offset, Long) -> Unit = { _, _, _ -> },
-    onStylusMotionEvent: (MotionEvent) -> Boolean = { false },
     onDrawingStart: () -> Unit = {}
 ) {
     val currentTool by drawingEngine.currentTool.collectAsState()
@@ -68,7 +67,6 @@ fun DrawingCanvas(
     }
 
     fun handleMotionEvent(event: MotionEvent): Boolean {
-        onStylusMotionEvent(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 inputState.reset()

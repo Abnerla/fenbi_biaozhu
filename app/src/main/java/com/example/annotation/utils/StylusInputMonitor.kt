@@ -26,6 +26,12 @@ data class StylusInputReport(
     val repeatCount: Int = 0,
     val eventTime: Long
 ) {
+    val hasButtonInput: Boolean
+        get() = when (kind) {
+            StylusInputEventKind.MOTION -> candidateMotionMask != 0
+            StylusInputEventKind.KEY -> keyCode != 0
+        }
+
     val candidateMotionMask: Int
         get() = when {
             actionButton != 0 -> actionButton
@@ -47,6 +53,8 @@ object StylusInputMonitor {
     private val learning = AtomicBoolean(false)
     private val _latestReport = MutableStateFlow<StylusInputReport?>(null)
     val latestReport = _latestReport.asStateFlow()
+    private val _latestButtonReport = MutableStateFlow<StylusInputReport?>(null)
+    val latestButtonReport = _latestButtonReport.asStateFlow()
 
     val isLearning: Boolean
         get() = learning.get()
@@ -75,12 +83,16 @@ object StylusInputMonitor {
             buttonState = event.buttonState,
             actionButton = event.actionButton,
             eventTime = event.eventTime
-        ).also { _latestReport.value = it }
+        ).also { report ->
+            _latestReport.value = report
+            if (report.hasButtonInput) _latestButtonReport.value = report
+        }
     }
 
     fun publishKey(event: KeyEvent, force: Boolean = false): StylusInputReport? {
         val identity = StylusDeviceIdentity.fromInputDevice(event.device)
-        val relevant = force || standardStylusButtonForKeyCode(event.keyCode) != null ||
+        val relevant = force || learning.get() ||
+            standardStylusButtonForKeyCode(event.keyCode) != null ||
             StylusVendorPresetCatalog.looksLikeStylus(identity.name)
         if (!relevant) return null
         return StylusInputReport(
@@ -93,6 +105,9 @@ object StylusInputMonitor {
             keyCode = event.keyCode,
             repeatCount = event.repeatCount,
             eventTime = event.eventTime
-        ).also { _latestReport.value = it }
+        ).also { report ->
+            _latestReport.value = report
+            if (report.hasButtonInput) _latestButtonReport.value = report
+        }
     }
 }

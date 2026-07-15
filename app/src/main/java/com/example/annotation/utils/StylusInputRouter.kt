@@ -2,6 +2,7 @@ package com.example.annotation.utils
 
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.util.Log
 import com.example.annotation.model.StylusButton
 import com.example.annotation.model.StylusButtonAction
 import com.example.annotation.model.StylusButtonMasks
@@ -27,6 +28,7 @@ class StylusInputRouter(
         } else {
             configuredAction
         }
+        Log.d(TAG, "gesture button=$button type=$pressType action=$action")
         action?.let(onAction)
     }
 
@@ -74,6 +76,10 @@ class StylusInputRouter(
             else -> standardStylusButtonForKeyCode(event.keyCode)
         } ?: return false
 
+        Log.d(
+            TAG,
+            "key action=${event.action} code=${event.keyCode} device=${identity.stableKey} button=$button"
+        )
         StylusInputMonitor.publishKey(event, force = true)
         currentIdentity = identity
 
@@ -105,5 +111,9 @@ class StylusInputRouter(
         keyState = StylusButtonStateSnapshot()
         deliveredState = StylusButtonStateSnapshot()
         currentIdentity = null
+    }
+
+    private companion object {
+        const val TAG = "StylusInputRouter"
     }
 }

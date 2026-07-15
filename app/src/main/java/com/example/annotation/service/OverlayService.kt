@@ -55,6 +55,7 @@ import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
 import com.example.annotation.utils.StylusInputRouter
 import android.widget.Toast
+import android.widget.FrameLayout
 import com.example.annotation.ScreenCapturePermissionActivity
 
 /**
@@ -63,7 +64,7 @@ import com.example.annotation.ScreenCapturePermissionActivity
 class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
     private lateinit var windowManager: WindowManager
-    private var overlayView: ComposeView? = null
+    private var overlayView: View? = null
     private var overlayParams: WindowManager.LayoutParams? = null
     private var floatingButton: ComposeView? = null
     private val drawingEngine = DrawingEngine()
@@ -697,13 +698,23 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         }
         overlayParams = params
 
-        overlayView = ComposeView(this).apply {
+        val inputRoot = object : FrameLayout(this) {
+            override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+                if (stylusInputRouter.processMotionEvent(event)) return true
+                return super.dispatchGenericMotionEvent(event)
+            }
+
+            override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+                val stylusHandled = stylusInputRouter.processMotionEvent(event)
+                return super.dispatchTouchEvent(event) || stylusHandled
+            }
+        }
+        inputRoot.setViewTreeLifecycleOwner(this@OverlayService)
+        inputRoot.setViewTreeSavedStateRegistryOwner(this@OverlayService)
+        val composeView = ComposeView(this).apply {
             // 设置Lifecycle和SavedStateRegistry
             setViewTreeLifecycleOwner(this@OverlayService)
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
-            setOnGenericMotionListener { _, event ->
-                stylusInputRouter.processMotionEvent(event)
-            }
 
             setContent {
                 AnnotationTheme(themeMode = themeModeState.value) {
@@ -736,12 +747,19 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                             saveToolbarOrientation(orientation)
                         },
                         toolbarVisible = toolbarVisible,
-                        preferencesManager = preferencesManager,
-                        onStylusMotionEvent = stylusInputRouter::processMotionEvent
+                        preferencesManager = preferencesManager
                     )
                 }
             }
         }
+        inputRoot.addView(
+            composeView,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        overlayView = inputRoot
 
         try {
             windowManager.addView(overlayView, params)
@@ -783,6 +801,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     }
 
     private fun executeStylusAction(action: StylusButtonAction) {
+        android.util.Log.d("OverlayService", "executeStylusAction action=$action")
         when (action) {
             StylusButtonAction.VENDOR_DEFAULT -> Unit
             StylusButtonAction.NONE -> Unit

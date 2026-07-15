@@ -1,5 +1,7 @@
 package com.example.annotation.ui
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -29,6 +32,9 @@ import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.StylusInputEventKind
 import com.example.annotation.utils.StylusInputMonitor
 import com.example.annotation.utils.StylusInputReport
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,6 +43,8 @@ fun StylusSettingsScreen(
     preferencesManager: PreferencesManager,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var enabled by remember { mutableStateOf(preferencesManager.getStylusEnabled()) }
     var mode by remember { mutableStateOf(preferencesManager.getStylusMode()) }
     var manualProfile by remember { mutableStateOf(preferencesManager.getManualStylusProfile()) }
@@ -46,13 +54,17 @@ fun StylusSettingsScreen(
     var actionPicker by remember { mutableStateOf<StylusActionPicker?>(null) }
     val detectedProfile = remember { StylusProfile.detectForDevice() }
     val initiallyConnectedStylus = remember { StylusDeviceIdentity.connectedStyluses().firstOrNull() }
-    val latestReport by StylusInputMonitor.latestReport.collectAsState()
-    val activeIdentity = latestReport?.device ?: initiallyConnectedStylus
+    val latestReport by StylusInputMonitor.latestButtonReport.collectAsState()
+    var learnedIdentity by remember { mutableStateOf<StylusDeviceIdentity?>(null) }
+    val activeIdentity = learnedIdentity ?: latestReport?.device ?: initiallyConnectedStylus
     val detectedPreset = activeIdentity?.let(StylusVendorPresetCatalog::detect)
     var learningTarget by remember { mutableStateOf<StylusButton?>(null) }
     var learningStartSequence by remember { mutableLongStateOf(0L) }
     var learningSession by remember { mutableIntStateOf(0) }
     var learnedRevision by remember { mutableIntStateOf(0) }
+    var accessibilityReady by remember {
+        mutableStateOf(GestureForwardingAccessibilityService.isReady)
+    }
     var primaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomPrimaryMask().toString()) }
     var secondaryMask by remember { mutableStateOf(preferencesManager.getStylusCustomSecondaryMask().toString()) }
     val mappings = remember {
@@ -72,6 +84,13 @@ fun StylusSettingsScreen(
             ?: StylusLearnedBindings()
     }
 
+    fun startLearning(target: StylusButton) {
+        learningStartSequence = latestReport?.sequence ?: 0L
+        StylusInputMonitor.setLearningActive(true)
+        learningTarget = target
+        learningSession++
+    }
+
     LaunchedEffect(learningSession) {
         if (learningTarget == null) return@LaunchedEffect
         StylusInputMonitor.setLearningActive(true)
@@ -82,6 +101,16 @@ fun StylusSettingsScreen(
 
     DisposableEffect(Unit) {
         onDispose { StylusInputMonitor.setLearningActive(false) }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                accessibilityReady = GestureForwardingAccessibilityService.isReady
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(latestReport?.sequence, learningTarget) {
@@ -107,6 +136,7 @@ fun StylusSettingsScreen(
                 )
             }
         }
+        learnedIdentity = report.device
         learningTarget = null
         StylusInputMonitor.setLearningActive(false)
         learnedRevision++
@@ -208,29 +238,21 @@ fun StylusSettingsScreen(
                     report = latestReport,
                     learningTarget = learningTarget,
                     learnedBindings = learnedBindings,
-                    accessibilityReady = GestureForwardingAccessibilityService.isReady
+                    accessibilityReady = accessibilityReady
                 )
                 SettingsInsetDivider()
                 StylusCommandRow(
                     title = "学习主键",
                     description = "开始后在 10 秒内按下手写笔主键",
                     icon = Icons.Outlined.Edit,
-                    onClick = {
-                        learningStartSequence = latestReport?.sequence ?: 0L
-                        learningTarget = StylusButton.PRIMARY
-                        learningSession++
-                    }
+                    onClick = { startLearning(StylusButton.PRIMARY) }
                 )
                 SettingsInsetDivider()
                 StylusCommandRow(
                     title = "学习副键",
                     description = "开始后在 10 秒内按下手写笔副键",
                     icon = Icons.Outlined.Edit,
-                    onClick = {
-                        learningStartSequence = latestReport?.sequence ?: 0L
-                        learningTarget = StylusButton.SECONDARY
-                        learningSession++
-                    }
+                    onClick = { startLearning(StylusButton.SECONDARY) }
                 )
                 SettingsInsetDivider()
                 StylusCommandRow(
@@ -245,6 +267,19 @@ fun StylusSettingsScreen(
                         }
                     }
                 )
+                if (!accessibilityReady &&
+                    (learnedBindings.primaryKeyCode != 0 || learnedBindings.secondaryKeyCode != 0)
+                ) {
+                    SettingsInsetDivider()
+                    StylusCommandRow(
+                        title = "启用手写笔按键桥接",
+                        description = "当前按键以 KeyEvent 上报，启用后才能在悬浮标注中执行功能",
+                        icon = Icons.Outlined.Settings,
+                        onClick = {
+                            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }
+                    )
+                }
             }
 
             InputSettingsSectionTitle("主键功能")
