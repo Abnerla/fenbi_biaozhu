@@ -27,7 +27,7 @@ fun GroupedSettingsCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 fun SettingsInsetDivider(
-    startPadding: Dp = 64.dp,
+    startPadding: Dp = 16.dp,
     endPadding: Dp = 16.dp
 ) {
     HorizontalDivider(

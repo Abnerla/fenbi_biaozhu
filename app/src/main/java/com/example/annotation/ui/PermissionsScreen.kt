@@ -104,7 +104,7 @@ fun PermissionsScreen(
             )
 
             GroupedSettingsCard {
-                PermissionDetailCard(Icons.Outlined.Info, "屏幕捕获权限", "允许应用在截图时捕获屏幕实际显示的内容（包括视频、浏览器等），与标注内容合成保存", permissionStatus.hasScreenCapture, onRequestScreenCapturePermission)
+                PermissionDetailCard(Icons.Outlined.Info, "屏幕捕获权限（可选）", "仅在使用应用内截图时按需启用，不影响标注服务启动", permissionStatus.hasScreenCapture, onRequestScreenCapturePermission)
                 SettingsInsetDivider()
                 PermissionDetailCard(Icons.Outlined.Star, "悬浮窗权限", "允许应用在其他应用上层显示悬浮按钮和工具栏，这是核心功能必需的权限", permissionStatus.hasOverlay, onRequestOverlayPermission)
                 SettingsInsetDivider()
@@ -159,7 +159,7 @@ fun PermissionsScreen(
  */
 @Composable
 private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
-    val allGranted = permissionStatus.isAllGranted()
+    val allGranted = permissionStatus.canRunAnnotationService()
 
     Card(
         modifier = Modifier
@@ -204,13 +204,13 @@ private fun PermissionStatusCard(permissionStatus: PermissionStatus) {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = if (allGranted) "权限已完整" else "缺少必要权限",
+                    text = if (allGranted) "基础权限已完整" else "缺少基础权限",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = if (allGranted)
-                        "应用已获取所有必要权限，可以正常使用"
+                        "标注服务可以正常使用，截图权限可按需授予"
                     else
                         "请授予必要权限以确保应用正常运行",
                     style = MaterialTheme.typography.bodyMedium,

@@ -51,6 +51,7 @@ import com.example.annotation.utils.PreferencesManager
 import com.example.annotation.utils.ScreenshotHelper
 import com.example.annotation.utils.ScreenCaptureManager
 import android.widget.Toast
+import com.example.annotation.ScreenCapturePermissionActivity
 
 /**
  * 悬浮窗服务
@@ -131,6 +132,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         private const val KEY_HIGHLIGHTER_STROKE_WIDTH = "highlighter_stroke_width"
         private const val KEY_HIGHLIGHTER_ALPHA = "highlighter_alpha"
         private const val KEY_ERASER_SIZE = "eraser_size"
+
+        const val ACTION_SET_MEDIA_PROJECTION = "ACTION_SET_MEDIA_PROJECTION"
+        const val EXTRA_RESULT_CODE = "resultCode"
+        const val EXTRA_DATA = "data"
+        const val EXTRA_CAPTURE_AFTER_PERMISSION = "captureAfterPermission"
 
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
@@ -244,13 +250,13 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         showFloatingButton()
 
         // 处理屏幕捕获权限设置
-        if (intent?.action == "ACTION_SET_MEDIA_PROJECTION") {
-            val resultCode = intent.getIntExtra("resultCode", -1)
+        if (intent?.action == ACTION_SET_MEDIA_PROJECTION) {
+            val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1)
             val data = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra("data", Intent::class.java)
+                intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)
             } else {
                 @Suppress("DEPRECATION")
-                intent.getParcelableExtra("data")
+                intent.getParcelableExtra(EXTRA_DATA)
             }
 
             android.util.Log.d("OverlayService", "收到MediaProjection权限数据: resultCode=$resultCode, data=$data")
@@ -264,7 +270,14 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
                 if (success) {
                     android.util.Log.d("OverlayService", "MediaProjection初始化成功")
-                    Toast.makeText(this, "屏幕捕获权限已授予，可以开始截图", Toast.LENGTH_SHORT).show()
+                    if (intent.getBooleanExtra(EXTRA_CAPTURE_AFTER_PERMISSION, false)) {
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                            { handleScreenshot() },
+                            250
+                        )
+                    } else {
+                        Toast.makeText(this, "截图权限已准备", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     android.util.Log.e("OverlayService", "MediaProjection初始化失败")
                     screenCaptureManager.reset()
@@ -274,11 +287,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                 android.util.Log.w("OverlayService", "权限数据无效")
             }
         } else if (intent == null || intent.action == null) {
-            // 服务启动但没有特定action，尝试恢复之前的权限
-            android.util.Log.d("OverlayService", "普通启动，检查是否需要恢复MediaProjection")
-            if (!screenCaptureManager.hasPermission()) {
-                tryRestoreMediaProjection()
-            }
+            android.util.Log.d("OverlayService", "普通启动，不启用屏幕捕获")
         }
 
         return START_STICKY
@@ -724,6 +733,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             if (cachedData != null) {
                 android.util.Log.d("OverlayService", "尝试使用缓存的权限数据初始化MediaProjection")
                 val (resultCode, data) = cachedData
+                promoteToMediaProjectionForegroundService()
                 val success = screenCaptureManager.initializeMediaProjection(resultCode, data)
 
                 if (!success) {
@@ -736,7 +746,10 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                 // 继续执行截图
             } else {
                 android.util.Log.e("OverlayService", "没有缓存的权限数据")
-                Toast.makeText(this, "请先在主界面授予屏幕捕获权限", Toast.LENGTH_LONG).show()
+                val permissionIntent = Intent(this, ScreenCapturePermissionActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(permissionIntent)
                 return
             }
         }
@@ -759,6 +772,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
                     // 步骤3：截图成功后，恢复工具栏显示
                     toolbarVisibleState.value = true
+                    screenCaptureManager.reset()
                     android.util.Log.d("OverlayService", "工具栏已恢复显示")
 
                     // 显示成功提示（这个Toast会出现在截图完成后，所以不会被捕获）
@@ -769,6 +783,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
                     // 步骤3：截图失败后，也要恢复工具栏显示
                     toolbarVisibleState.value = true
+                    screenCaptureManager.reset()
                     android.util.Log.d("OverlayService", "工具栏已恢复显示")
 
                     Toast.makeText(this, "截图失败: ${exception.message}", Toast.LENGTH_LONG).show()

@@ -116,35 +116,19 @@ class MainActivity : ComponentActivity() {
             // 1. 保存权限数据到ScreenCaptureManager
             screenCaptureManager.savePermissionData(result.resultCode, result.data!!)
 
-            // 2. 服务已运行时立即更新MediaProjection；未运行时由权限齐全后的
-            // 普通启动从内存缓存中初始化，避免仅授权截图就创建悬浮窗服务。
-            val serviceIntent = Intent(this, OverlayService::class.java).apply {
-                action = "ACTION_SET_MEDIA_PROJECTION"
-                putExtra("resultCode", result.resultCode)
-                putExtra("data", result.data)
-            }
-
-            if (checkServiceRunning()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent)
-                } else {
-                    startService(serviceIntent)
-                }
-            }
-
-            // 3. 更新权限状态
+            // 仅缓存授权令牌；真正的屏幕捕获在用户点击截图时才初始化。
             updatePermissionStatus()
 
             android.widget.Toast.makeText(
                 this,
-                "屏幕捕获权限已授予，可以开始截图了",
+                "截图权限已准备，将在截图时按需启用",
                 android.widget.Toast.LENGTH_SHORT
             ).show()
         } else {
             android.util.Log.w("MainActivity", "屏幕捕获权限被拒绝")
             android.widget.Toast.makeText(
                 this,
-                "需要屏幕捕获权限才能使用截图功能",
+                "已取消截图授权，不影响标注功能使用",
                 android.widget.Toast.LENGTH_LONG
             ).show()
         }
@@ -447,9 +431,12 @@ class MainActivity : ComponentActivity() {
         isServiceRunning = checkServiceRunning()
         android.util.Log.d("MainActivity", "服务运行状态: $isServiceRunning")
 
-        // 如果所有权限都已授予，且之前没有全部授予，且服务未运行，则自动启动服务
-        if (permissionStatus.isAllGranted() && !previousStatus.isAllGranted() && !isServiceRunning) {
-            android.util.Log.d("MainActivity", "所有权限已授予，自动启动服务")
+        // 屏幕捕获是按需权限，不阻止基础标注服务启动。
+        if (permissionStatus.canRunAnnotationService() &&
+            !previousStatus.canRunAnnotationService() &&
+            !isServiceRunning
+        ) {
+            android.util.Log.d("MainActivity", "基础权限已授予，自动启动服务")
             OverlayService.start(this)
             isServiceRunning = true
         }
@@ -716,14 +703,14 @@ fun MainScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (permissionStatus.isAllGranted())
+                        containerColor = if (permissionStatus.canRunAnnotationService())
                             MaterialTheme.colorScheme.tertiaryContainer
                         else
                             MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         Row(
@@ -737,10 +724,10 @@ fun MainScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(48.dp)
+                                        .size(40.dp)
                                         .clip(CircleShape)
                                         .background(
-                                            if (permissionStatus.isAllGranted())
+                                            if (permissionStatus.canRunAnnotationService())
                                                 MaterialTheme.colorScheme.primary
                                             else
                                                 MaterialTheme.colorScheme.outline
@@ -751,20 +738,20 @@ fun MainScreen(
                                         imageVector = Icons.Outlined.Create,
                                         contentDescription = null,
                                         tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                                 Column {
                                     Text(
                                         text = "标注服务",
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = if (permissionStatus.isAllGranted())
+                                        text = if (permissionStatus.canRunAnnotationService())
                                             "开启后显示悬浮按钮"
                                         else
-                                            "需要授予所有权限",
+                                            "需要授予基础权限",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -781,7 +768,7 @@ fun MainScreen(
                                         onStopService()
                                     }
                                 },
-                                enabled = permissionStatus.isAllGranted(),
+                                enabled = permissionStatus.canRunAnnotationService(),
                                 colors = iosSwitchColors()
                             )
                         }
@@ -797,8 +784,8 @@ fun MainScreen(
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -807,25 +794,23 @@ fun MainScreen(
                             Icon(
                                 imageVector = Icons.Outlined.CheckCircle,
                                 contentDescription = null,
-                                tint = if (permissionStatus.isAllGranted())
+                                tint = if (permissionStatus.canRunAnnotationService())
                                     MaterialTheme.colorScheme.primary
                                 else
                                     MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = "权限检查",
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
                         PermissionItemModern(
                             icon = Icons.Outlined.Info,
-                            name = "屏幕捕获权限",
-                            description = "截图时捕获屏幕实际内容",
+                            name = "屏幕捕获权限（可选）",
+                            description = "仅在应用内截图时按需启用",
                             isGranted = permissionStatus.hasScreenCapture,
                             onRequest = onRequestScreenCapturePermission
                         )
@@ -875,7 +860,7 @@ fun MainScreen(
 
                 // 提示文本
                 AnimatedVisibility(
-                    visible = permissionStatus.isAllGranted(),
+                    visible = permissionStatus.canRunAnnotationService(),
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
@@ -938,6 +923,7 @@ fun PermissionItemModern(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(55.dp)
             .clip(RoundedCornerShape(8.dp)),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
@@ -949,19 +935,19 @@ fun PermissionItemModern(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
                         .background(
                             if (isGranted)
@@ -978,7 +964,7 @@ fun PermissionItemModern(
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 

@@ -363,13 +363,13 @@ fun calculatePressureAdjustedAlpha(baseAlpha: Float, pressure: Float): Float {
 
 ### 为什么需要这些权限？
 
-| 权限 | 用途 | 是否必需 |
-|------|------|---------|
-| SYSTEM_ALERT_WINDOW | 在其他应用上层显示悬浮窗和绘图工具 | ✅ 必需 |
-| FOREGROUND_SERVICE | 确保标注功能在后台稳定运行 | ✅ 必需 |
-| FOREGROUND_SERVICE_MEDIA_PROJECTION | 在前台服务中进行屏幕捕获（Android 14+要求） | ✅ 必需 |
-| POST_NOTIFICATIONS | 显示前台服务通知 | ✅ 必需 |
-| READ_MEDIA_IMAGES / WRITE_EXTERNAL_STORAGE | 将截图保存到系统相册 | ✅ 必需 |
+| 权限 | 用途 | 是否必需  |
+|------|------|-------|
+| SYSTEM_ALERT_WINDOW | 在其他应用上层显示悬浮窗和绘图工具 | ✅ 必需  |
+| FOREGROUND_SERVICE | 确保标注功能在后台稳定运行 | ✅ 必需  |
+| FOREGROUND_SERVICE_MEDIA_PROJECTION | 在前台服务中进行屏幕捕获（Android 14+要求） | ✅ 必需  |
+| POST_NOTIFICATIONS | 显示前台服务通知 | ✅ 必需  |
+| READ_MEDIA_IMAGES / WRITE_EXTERNAL_STORAGE | 将截图保存到系统相册 | ✅ 非必需 |
 
 **隐私承诺**：所有权限仅用于本地功能，不上传任何数据到云端或第三方服务器。
 
@@ -400,50 +400,6 @@ handler.postDelayed({ ... }, 300)  // VirtualDisplay渲染等待时间（ms）
 handler.postDelayed({ ... }, 100)  // UI隐藏等待时间（ms）
 ```
 
----
-
-## 📊 版本历史
-
-### v1.2.2 (2025-01-10) - 当前版本
-- ✨ **新功能**：优化橡皮擦，实现按路径智能擦除（触碰即删除整条路径）
-- ✨ **新功能**：截图时自动隐藏工具栏和Toast弹窗，确保截图纯净
-- 🐛 **修复**：修复权限状态显示不准确的问题
-- 🐛 **修复**：修复MediaProjection必须在前台服务初始化的问题（Android 14+）
-- 🐛 **修复**：修复Service Context获取Display的兼容性问题
-- 🎨 **优化**：橡皮擦显示半透明圆圈和十字准星，操作更精确
-
-### v1.2.0 (2024-12-20)
-- ✨ 添加荧光笔工具和透明度设置
-- ✨ 支持压感检测和笔触粗细调节
-- ✨ 添加自动折叠工具栏功能
-- 🎨 优化工具栏UI和交互体验
-- 🎨 改进颜色选择和笔触调节界面
-
-### v1.0.0 (2024-11-15)
-- 🎉 初始版本发布
-- ✨ 基础绘图功能（画笔、橡皮擦）
-- ✨ 屏幕截图功能
-- ✨ 悬浮窗支持
-- ✨ 权限管理系统
-- ✨ 前台服务保活
-
----
-
-## 🚧 未来规划
-
-### 近期计划
-- [ ] 添加形状工具（直线、圆形、矩形、箭头）
-- [ ] 支持文字输入和标注
-- [ ] 添加更多笔刷样式（虚线、点线、毛笔效果）
-- [ ] 优化性能，支持更复杂的标注场景
-
-### 长期规划
-- [ ] 标注历史记录持久化
-- [ ] 标注模板功能（预设常用标注）
-- [ ] 多指手势优化（缩放、平移画布）
-- [ ] 暗色主题支持
-- [ ] 云端同步和分享功能
-- [ ] 性能分析和优化工具
 
 ---
 
@@ -519,18 +475,14 @@ SOFTWARE.
 
 ## 📞 联系方式
 
-- 项目主页：[GitHub Repository](https://github.com/yourusername/annotation)
-- 问题反馈：[GitHub Issues](../../issues)
-- 讨论区：[GitHub Discussions](../../discussions)
+- 项目主页：[GitHub Repository](https://github.com/Abnerla/fenbi_biaozhu)
+- 问题反馈：[GitHub Issues](https://github.com/Abnerla/fenbi_biaozhu/issues)
 
 ---
 
 ## 📈 性能指标
 
-- **响应延迟**：<100ms
 - **内存占用**：~30-50MB
-- **CPU占用**：<5%（绘图时）
-- **支持路径数**：无限制
 - **历史记录**：最多保存50步操作
 - **最低系统要求**：Android 9.0 (API 28)
 - **推荐系统**：Android 10.0 (API 29) 或更高

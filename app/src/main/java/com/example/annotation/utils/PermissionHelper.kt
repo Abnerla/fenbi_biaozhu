@@ -143,4 +143,6 @@ data class PermissionStatus(
     val hasForegroundServiceMediaProjection: Boolean = true
 ) {
     fun isAllGranted(): Boolean = hasOverlay && hasNotification && hasStorage && hasScreenCapture && hasForegroundServiceMediaProjection
+
+    fun canRunAnnotationService(): Boolean = hasOverlay && hasNotification && hasStorage
 }
