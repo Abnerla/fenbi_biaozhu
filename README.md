@@ -318,4 +318,4 @@ app/src/main/java/com/example/annotation/
 
 ## 许可证
 
-本项目采用 MIT License。
+本项目采用 Apache License 2.0 License。
