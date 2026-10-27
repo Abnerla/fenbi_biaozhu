@@ -7,7 +7,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -50,6 +52,7 @@ import com.example.annotation.drawing.DrawingEngine
 import com.example.annotation.model.DrawingTool
 import com.example.annotation.model.StylusButtonAction
 import com.example.annotation.ui.OverlayContent
+import com.example.annotation.ui.OverlayGeometry
 import com.example.annotation.ui.theme.AnnotationTheme
 import com.example.annotation.utils.AppThemeMode
 import com.example.annotation.utils.PreferencesManager
@@ -102,6 +105,26 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     // 保存悬浮按钮位置的参数
     private var floatingButtonParams: WindowManager.LayoutParams? = null
 
+    /**
+     * 悬浮球停靠边（语义状态）。
+     *
+     * 旋转时宽度变化，"x 在不在右半侧"这个判断会跟着变，所以必须单独保存；
+     * 只由绝对 x 推断会让右边停靠的球转到横屏后跑到左下角。
+     */
+    private var floatingButtonSide = OverlayGeometry.FloatingSide.RIGHT
+
+    /** 悬浮球纵向位置占可用高度的比例（0~1）；-1 表示尚未知，退化为直接夹取像素。 */
+    private var floatingButtonRatioY = -1f
+
+    /**
+     * 工具栏是否「曾经」真的出现在可见区域。
+     *
+     * 标注层铺满整屏且吞掉所有触摸，工具栏一旦没渲染出来或落在窗口外，用户就退不出去。
+     * 进入标注模式后服务侧会在 [ANNOTATION_UI_TIMEOUT_MS] 后复查这个标记，没亮过就自动退出。
+     * 用「曾经」而不是「当前」，是为了避免用户正常拖拽时的中间态被误判。
+     */
+    private var annotationToolbarSeenVisible = false
+
     // 保存工具栏位置
     private var toolbarOffsetX: Float = 0f
     private var toolbarOffsetY: Float = 0f
@@ -126,8 +149,13 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // SharedPreferences相关常量
         private const val PREFS_NAME = "overlay_button_prefs"
+
+        /** 进入标注模式后多久复查工具栏是否真的可见（毫秒）。 */
+        private const val ANNOTATION_UI_TIMEOUT_MS = 3000L
         private const val KEY_BUTTON_X = "button_x"
         private const val KEY_BUTTON_Y = "button_y"
+        private const val KEY_BUTTON_SIDE = "button_side"
+        private const val KEY_BUTTON_RATIO_Y = "button_ratio_y"
         private const val KEY_FIRST_LAUNCH = "first_launch"
 
         // 工具栏位置相关常量
@@ -401,13 +429,22 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     }
 
     /**
-     * 保存悬浮按钮位置到SharedPreferences
+     * 保存悬浮按钮位置到SharedPreferences。
+     *
+     * 同时保存**停靠边**和**纵向比例**：绝对像素只在当前屏幕方向下有意义，
+     * 旋转后必须靠这两项还原，否则右边的球会被判成左侧、纵向位置也会漂移。
      */
     private fun saveButtonPosition(x: Int, y: Int) {
+        val bounds = displayBounds()
+        val size = floatingButtonSizePx()
+        val usableHeight = (bounds.height() - size).coerceAtLeast(1)
+        floatingButtonRatioY = (y.toFloat() / usableHeight).coerceIn(0f, 1f)
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().apply {
             putInt(KEY_BUTTON_X, x)
             putInt(KEY_BUTTON_Y, y)
+            putString(KEY_BUTTON_SIDE, floatingButtonSide.name)
+            putFloat(KEY_BUTTON_RATIO_Y, floatingButtonRatioY)
             apply()
         }
     }
@@ -503,6 +540,110 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
     }
 
     /**
+     * 悬浮按钮边长估算值（像素）。
+     *
+     * 布局完成前拿不到 `view.width / height`，用 40dp 换算来参与定位与夹取；
+     * 按钮本身是 40.dp，所以在正常密度下这个估算值就等于真实尺寸。
+     */
+    private fun floatingButtonSizePx(): Int =
+        (40 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+
+    /**
+     * 当前方向下的真实屏幕区域（像素）。
+     *
+     * 悬浮窗的 `x / y` 是相对屏幕左上角的绝对坐标，必须用**含系统栏**的真实尺寸来夹取，
+     * 否则横屏（导航栏在侧边）会算错可用宽度。
+     */
+    private fun displayBounds(): Rect {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val bounds = getSystemService(WindowManager::class.java).currentWindowMetrics.bounds
+                if (bounds.width() > 0 && bounds.height() > 0) return bounds
+            } catch (e: Exception) {
+                android.util.Log.w("OverlayService", "currentWindowMetrics 不可用，回退到 getRealMetrics", e)
+            }
+        }
+        val displayMetrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+        return Rect(0, 0, displayMetrics.widthPixels, displayMetrics.heightPixels)
+    }
+
+    /**
+     * 屏幕方向 / 尺寸变化回调。
+     *
+     * Service 不会因为配置变化被重建（Android 没有 `<service android:configChanges>` 这个属性），
+     * 但窗口的绝对像素坐标也不会被系统换算 —— 必须在这里主动把窗口重新投影回可见区域。
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        android.util.Log.i(
+            "OverlayService",
+            "onConfigurationChanged: orientation=${newConfig.orientation} " +
+                "screen=${newConfig.screenWidthDp}x${newConfig.screenHeightDp}dp"
+        )
+        applyDisplayGeometry()
+    }
+
+    /**
+     * 把已有窗口重新投影到当前屏幕区域。
+     *
+     * 标注层是 MATCH_PARENT，WMS 会自动 resize，内部工具栏由 Compose 的 onSizeChanged 自愈；
+     * 需要在这里处理的只有悬浮球这种使用绝对 `x / y` 的窗口。
+     */
+    private fun applyDisplayGeometry() {
+        val bounds = displayBounds()
+        val ball = floatingButton
+        val params = floatingButtonParams
+        if (ball == null || params == null) {
+            android.util.Log.d(
+                "OverlayService",
+                "applyDisplayGeometry: bounds=${bounds.width()}x${bounds.height()}，当前无悬浮按钮"
+            )
+            return
+        }
+
+        // 布局未完成时宽高可能为 0，用 dp 估算兜底，避免这次旋转被整段跳过
+        val estimated = floatingButtonSizePx()
+        val buttonWidth = if (ball.width > 0) ball.width else estimated
+        val buttonHeight = if (ball.height > 0) ball.height else estimated
+
+        val beforeX = params.x
+        val beforeY = params.y
+        // 纵向按比例还原：直接沿用像素会把球夹到新屏幕的底边（用户看到的"掉到左下角"）
+        val desiredY = if (floatingButtonRatioY >= 0f) {
+            (floatingButtonRatioY * (bounds.height() - buttonHeight).coerceAtLeast(0)).toInt()
+        } else {
+            beforeY
+        }
+        // 停靠边用已保存的语义，不能由 beforeX 现推 —— 横屏变宽后"右半侧"的判断会翻转
+        val (x, y) = OverlayGeometry.clampFloatingButton(
+            x = beforeX,
+            y = desiredY,
+            buttonWidth = buttonWidth,
+            buttonHeight = buttonHeight,
+            screenWidth = bounds.width(),
+            screenHeight = bounds.height(),
+            preferredSide = floatingButtonSide
+        )
+        android.util.Log.i(
+            "OverlayService",
+            "applyDisplayGeometry: bounds=${bounds.width()}x${bounds.height()} " +
+                "ball=${buttonWidth}x${buttonHeight} pos=($beforeX,$beforeY)->($x,$y)"
+        )
+        if (x != params.x || y != params.y) {
+            params.x = x
+            params.y = y
+            try {
+                windowManager.updateViewLayout(ball, params)
+            } catch (e: IllegalArgumentException) {
+                android.util.Log.w("OverlayService", "悬浮按钮已被系统移除，跳过位置修正", e)
+            }
+            saveButtonPosition(x, y)
+        }
+    }
+
+    /**
      * 显示悬浮按钮
      */
     private fun showFloatingButton() {
@@ -513,10 +654,10 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             return
         }
 
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenWidth = displayMetrics.widthPixels
-        val screenHeight = displayMetrics.heightPixels
+        // 用真实屏幕尺寸：窗口坐标就是以它为基准的
+        val bounds = displayBounds()
+        val screenWidth = bounds.width()
+        val screenHeight = bounds.height()
 
         // 获取SharedPreferences
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -526,30 +667,55 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         val initialX: Int
         val initialY: Int
 
+        // 按钮实际约 40dp，用 dp 换算而不是硬编码像素，否则高密度屏上会有一截出界
+        val estimatedButtonSize = floatingButtonSizePx()
+
+        // 停靠边优先取保存的语义状态；老版本没有这项时，按历史 x 推断一次
+        val savedX = prefs.getInt(KEY_BUTTON_X, screenWidth - estimatedButtonSize)
+        floatingButtonSide = prefs.getString(KEY_BUTTON_SIDE, null)
+            ?.let { name -> runCatching { OverlayGeometry.FloatingSide.valueOf(name) }.getOrNull() }
+            ?: OverlayGeometry.floatingSideOf(savedX, estimatedButtonSize, screenWidth)
+
         if (isFirstLaunch) {
             // 第一次启动：位于屏幕右边中间位置
-            // 注意：需要在按钮创建后才能获取其实际宽高，这里先用估计值
-            val estimatedButtonSize = 100 // FAB的估计大小（像素）- 减少后约40dp
-            initialX = screenWidth - estimatedButtonSize
+            initialX = OverlayGeometry.floatingButtonX(
+                floatingButtonSide, estimatedButtonSize, screenWidth
+            )
             initialY = (screenHeight - estimatedButtonSize) / 2
 
             // 标记已经不是第一次启动
             prefs.edit().putBoolean(KEY_FIRST_LAUNCH, false).apply()
         } else {
-            // 读取上次保存的位置
-            initialX = prefs.getInt(KEY_BUTTON_X, screenWidth - 100)
-            initialY = prefs.getInt(KEY_BUTTON_Y, screenHeight / 2)
+            // 横向用停靠边还原、纵向用比例还原：绝对像素只在保存它的那个方向下才有效。
+            // 历史版本存的是另一套方向下的像素，所以两条路都还要再夹一次。
+            val usableHeight = (screenHeight - estimatedButtonSize).coerceAtLeast(1)
+            val ratioY = prefs.getFloat(KEY_BUTTON_RATIO_Y, -1f)
+            floatingButtonRatioY = ratioY
+            val restoredY = if (ratioY >= 0f) {
+                (ratioY * usableHeight).toInt()
+            } else {
+                prefs.getInt(KEY_BUTTON_Y, screenHeight / 2)
+            }
+            val clamped = OverlayGeometry.clampFloatingButton(
+                x = savedX,
+                y = restoredY,
+                buttonWidth = estimatedButtonSize,
+                buttonHeight = estimatedButtonSize,
+                screenWidth = screenWidth,
+                screenHeight = screenHeight,
+                preferredSide = floatingButtonSide
+            )
+            initialX = clamped.first
+            initialY = clamped.second
         }
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            // 不再使用 FLAG_LAYOUT_NO_LIMITS：悬浮球不需要越出屏幕，
+            // 保留系统的越界夹取能力可以在任何遗漏场景下兜底。
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -559,6 +725,11 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         // 保存params引用
         floatingButtonParams = params
+        android.util.Log.i(
+            "OverlayService",
+            "showFloatingButton: bounds=${bounds.width()}x${bounds.height()} " +
+                "pos=($initialX,$initialY) estimated=$estimatedButtonSize"
+        )
 
         floatingButton = ComposeView(this).apply {
             // 设置Lifecycle和SavedStateRegistry
@@ -597,26 +768,23 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
      * 将悬浮按钮吸附到屏幕最近的边缘
      */
     private fun snapToEdge(params: WindowManager.LayoutParams, view: View) {
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenWidth = displayMetrics.widthPixels
-        val screenHeight = displayMetrics.heightPixels
+        // 布局尚未完成时宽高为 0，此时算出来的目标位置会把按钮推出屏幕
+        if (view.width <= 0 || view.height <= 0) return
 
-        // 计算悬浮按钮的中心位置
-        val centerX = params.x + view.width / 2
-        val centerY = params.y + view.height / 2
-
-        // 确定最近的边缘（左边或右边）
-        val targetX = if (centerX < screenWidth / 2) {
-            // 靠左边
-            0
-        } else {
-            // 靠右边
-            screenWidth - view.width
-        }
-
-        // Y轴保持在屏幕范围内
-        val targetY = params.y.coerceIn(0, screenHeight - view.height)
+        val bounds = displayBounds()
+        // 拖拽结束是用户表达"想停在哪一侧"的唯一时机，在这里更新停靠边
+        floatingButtonSide = OverlayGeometry.floatingSideOf(
+            params.x, view.width, bounds.width()
+        )
+        val (targetX, targetY) = OverlayGeometry.clampFloatingButton(
+            x = params.x,
+            y = params.y,
+            buttonWidth = view.width,
+            buttonHeight = view.height,
+            screenWidth = bounds.width(),
+            screenHeight = bounds.height(),
+            preferredSide = floatingButtonSide
+        )
 
         // 使用动画平滑移动到边缘
         val startX = params.x
@@ -671,11 +839,14 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         // 隐藏悬浮按钮
         removeFloatingButton()
 
-        // 获取屏幕尺寸
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenWidth = displayMetrics.widthPixels.toFloat()
-        val screenHeight = displayMetrics.heightPixels.toFloat()
+        // 上一次若因为截图中断而把工具栏藏起来了，这里必须复位，否则进标注模式就是"白屏"
+        annotationToolbarSeenVisible = false
+        toolbarVisibleState.value = true
+
+        // 获取屏幕尺寸（与标注层窗口同一套坐标：含系统栏的真实像素）
+        val bounds = displayBounds()
+        val screenWidth = bounds.width().toFloat()
+        val screenHeight = bounds.height().toFloat()
 
         // 获取SharedPreferences
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -692,8 +863,8 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         // 计算工具栏初始位置
         if (isToolbarFirstLaunch) {
             // 第一次启动：位于屏幕右边中间位置
-            // offsetX为靠右的标记值（screenWidth - 16），实际会对齐到右侧
-            toolbarOffsetX = screenWidth - 16f
+            // offsetX为靠右的标记值，实际会对齐到右侧
+            toolbarOffsetX = screenWidth - OverlayGeometry.EDGE_INSET_PX
             toolbarOffsetY = screenHeight / 2
 
             // 标记已经不是第一次启动
@@ -707,10 +878,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
@@ -769,6 +937,17 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                             // 立即保存布局方向
                             saveToolbarOrientation(orientation)
                         },
+                        onOverlayLayout = { layout ->
+                            if (!annotationToolbarSeenVisible && layout.isVisible()) {
+                                annotationToolbarSeenVisible = true
+                                android.util.Log.i(
+                                    "OverlayService",
+                                    "标注工具栏已可见: (${layout.toolbarLeft},${layout.toolbarTop})" +
+                                        "-(${layout.toolbarRight},${layout.toolbarBottom}) " +
+                                        "container=${layout.containerWidth}x${layout.containerHeight}"
+                                )
+                            }
+                        },
                         toolbarVisible = toolbarVisible,
                         preferencesManager = preferencesManager
                     )
@@ -787,6 +966,19 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         try {
             windowManager.addView(overlayView, params)
             isAnnotationModeActive = true
+            // 兜底复查：标注层会吞掉全部触摸，工具栏没出来就等于把用户锁死在透明画布上。
+            // 必须捕获本次创建的 view：若用字段，用户在 3 秒内退出又重进时，
+            // 旧任务会拿新窗口做校验，把刚进去的标注模式误杀。
+            val createdView = overlayView
+            mainHandler.postDelayed(
+                { verifyAnnotationUi(createdView) },
+                ANNOTATION_UI_TIMEOUT_MS
+            )
+            android.util.Log.i(
+                "OverlayService",
+                "showOverlay ok: bounds=${bounds.width()}x${bounds.height()} " +
+                    "orientation=$toolbarOrientation toolbarOffset=(${toolbarOffsetX},${toolbarOffsetY})"
+            )
         } catch (e: Exception) {
             android.util.Log.e("OverlayService", "添加标注悬浮层失败", e)
             overlayView = null
@@ -810,7 +1002,30 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         }
         overlayParams = null
         isAnnotationModeActive = false
+        annotationToolbarSeenVisible = false
         stylusInputRouter.dispose()
+    }
+
+    /**
+     * 标注界面自检。
+     *
+     * 进入标注模式一小段时间后，如果工具栏**从未**真正出现在可见区域，说明界面没渲染出来
+     * （或落到了窗口外）。此时用户既看不到入口、也点不到「退出」，连返回手势都会被画布吃掉，
+     * 只能杀进程 —— 主动退出并交还悬浮球，远比把用户锁死在透明画布上要好。
+     *
+     * 用"曾经可见"而不是"当前可见"，是为了避免用户正常拖拽的中间态被误判成故障。
+     */
+    private fun verifyAnnotationUi(expected: View?) {
+        if (overlayView !== expected || !isAnnotationModeActive) return
+        if (annotationToolbarSeenVisible) return
+
+        android.util.Log.w(
+            "OverlayService",
+            "标注工具栏在 ${ANNOTATION_UI_TIMEOUT_MS}ms 内未出现在可见区域，自动退出标注模式"
+        )
+        removeOverlay()
+        showFloatingButton()
+        Toast.makeText(this, "标注界面未能显示，已自动退出", Toast.LENGTH_LONG).show()
     }
 
     private fun requestStylusKeyBridge() {
